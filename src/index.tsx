@@ -807,6 +807,9 @@ app.get('/', (c) => {
                 </div>
                 </div>
 
+                </div>
+
+
                 <!-- ====== 児童用ビュー ====== -->
                 <div x-show="currentRole === 'student'">
                     <div x-show="currentView === 'student_login'" class="max-w-md mx-auto mt-10">
