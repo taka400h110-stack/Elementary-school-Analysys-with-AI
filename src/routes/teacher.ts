@@ -211,7 +211,8 @@ teacherApp.get('/seed', async (c) => {
       "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (1, 1, '算数', '割合', '小5算数「割合」', '{}', 1)",
       "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (2, 1, '国語', '大造じいさんとガン', '小5国語', '{}', 1)",
       "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (3, 1, '理科', 'ふりこのきまり', '小5理科', '{}', 1)",
-      "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (4, 1, '社会', '自動車工業のさかんな地域', '小5社会', '{}', 1)"
+      "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (4, 1, '社会', '自動車工業のさかんな地域', '小5社会', '{}', 1)",
+      "INSERT INTO lessons (id, unit_id, lesson_number, status) VALUES (1, 1, 1, 'planned')"
     ];
     
     // UUID付きで35人作成
