@@ -974,67 +974,73 @@ app.get('/', (c) => {
 
                     getStudentIsmCode(subject, score) {
                         let nodes = [];
-                        let code = 'graph TD\\n';
-                        code += 'classDef success fill:#d1fae5,stroke:#10b981,stroke-width:2px;\\n';
-                        code += 'classDef warning fill:#fef3c7,stroke:#f59e0b,stroke-width:2px;\\n';
-                        code += 'classDef danger fill:#fee2e2,stroke:#ef4444,stroke-width:2px;\\n';
+                        let code = 'graph TD\n';
+                        code += 'classDef knowledge fill:#e0f2fe,stroke:#2563eb,stroke-width:2px;\n';
+                        code += 'classDef thinking fill:#fce7f3,stroke:#db2777,stroke-width:2px;\n';
+                        code += 'classDef success stroke:#10b981,stroke-width:4px;\n';
+                        code += 'classDef warning stroke:#f59e0b,stroke-width:4px;\n';
+                        code += 'classDef danger stroke:#ef4444,stroke-width:4px;\n';
 
                         if(subject === '国語') {
                             nodes = [
-                                { id: 'A', name: '場面の把握', type: 'knowledge', parents: [], threshold: 30 },
-                                { id: 'B', name: '登場人物の確認', type: 'knowledge', parents: ['A'], threshold: 40 },
-                                { id: 'C', name: '行動の読み取り', type: 'thinking', parents: ['B'], threshold: 50 },
-                                { id: 'D', name: '心情の推測', type: 'thinking', parents: ['C'], threshold: 60 },
-                                { id: 'E', name: '情景描写の効果', type: 'thinking', parents: ['C'], threshold: 70 },
-                                { id: 'F', name: '心情の変化', type: 'thinking', parents: ['D', 'E'], threshold: 80 },
-                                { id: 'G', name: '主題の考察', type: 'thinking', parents: ['F'], threshold: 90 },
-                                { id: 'H', name: '自分の考え', parents: ['G'], threshold: 95 }
+                                { id: 'A', name: '登場人物と設定の確認', type: 'knowledge', parents: [], threshold: 30 },
+                                { id: 'B', name: '大造じいさんの計略の読み取り', type: 'knowledge', parents: ['A'], threshold: 40 },
+                                { id: 'C', name: '残雪の行動の読み取り', type: 'thinking', parents: ['B'], threshold: 50 },
+                                { id: 'D', name: '情景描写が表す意味の理解', type: 'thinking', parents: ['B'], threshold: 60 },
+                                { id: 'E', name: '大造じいさんの心情変化の推測', type: 'thinking', parents: ['C', 'D'], threshold: 70 },
+                                { id: 'F', name: '残雪に対する認識の変化', type: 'thinking', parents: ['E'], threshold: 80 },
+                                { id: 'G', name: '主題（命の尊厳）の考察', type: 'thinking', parents: ['F'], threshold: 90 },
+                                { id: 'H', name: '自分の考えの表現', type: 'thinking', parents: ['G'], threshold: 95 }
                             ];
                         } else if(subject === '理科') {
                             nodes = [
-                                { id: 'A', name: '事象の提示', type: 'knowledge', parents: [], threshold: 30 },
-                                { id: 'B', name: '問題の見いだし', type: 'thinking', parents: ['A'], threshold: 40 },
-                                { id: 'C', name: '予想・仮説の設定', type: 'thinking', parents: ['B'], threshold: 50 },
-                                { id: 'D', name: '解決方法の立案', type: 'thinking', parents: ['C'], threshold: 60 },
-                                { id: 'E', name: '観察・実験の実施', type: 'knowledge', parents: ['D'], threshold: 70 },
-                                { id: 'F', name: '結果の整理', type: 'knowledge', parents: ['E'], threshold: 80 },
-                                { id: 'G', name: '考察', type: 'thinking', parents: ['F'], threshold: 90 },
-                                { id: 'H', name: '結論の導出', type: 'thinking', parents: ['G'], threshold: 95 }
+                                { id: 'A', name: 'ふりこの各部名称', type: 'knowledge', parents: [], threshold: 30 },
+                                { id: 'B', name: '1往復する時間の測り方', type: 'knowledge', parents: ['A'], threshold: 40 },
+                                { id: 'C', name: '周期に影響する要因の仮説', type: 'thinking', parents: ['B'], threshold: 50 },
+                                { id: 'D', name: '条件制御による実験計画', type: 'thinking', parents: ['C'], threshold: 60 },
+                                { id: 'E', name: '実験の実施と結果の記録', type: 'knowledge', parents: ['D'], threshold: 70 },
+                                { id: 'F', name: '結果のグラフ化と傾向の読み取り', type: 'thinking', parents: ['E'], threshold: 80 },
+                                { id: 'G', name: '長さのみが関係するとの結論', type: 'thinking', parents: ['F'], threshold: 90 },
+                                { id: 'H', name: '日常生活への適用', type: 'thinking', parents: ['G'], threshold: 95 }
                             ];
                         } else if(subject === '社会') {
                             nodes = [
-                                { id: 'A', name: '事象の把握', type: 'knowledge', parents: [], threshold: 30 },
-                                { id: 'B', name: '問いの生成', type: 'thinking', parents: ['A'], threshold: 40 },
-                                { id: 'C', name: '情報の収集', type: 'knowledge', parents: ['B'], threshold: 50 },
-                                { id: 'D', name: '情報の読み取り', type: 'knowledge', parents: ['C'], threshold: 60 },
-                                { id: 'E', name: '関連付け・意味づけ', type: 'thinking', parents: ['D'], threshold: 70 },
-                                { id: 'F', name: '概念の形成', type: 'thinking', parents: ['E'], threshold: 80 },
-                                { id: 'G', name: 'まとめ・表現', type: 'thinking', parents: ['F'], threshold: 90 }
+                                { id: 'A', name: '工場の分布と立地条件', type: 'knowledge', parents: [], threshold: 30 },
+                                { id: 'B', name: '生産工程', type: 'knowledge', parents: ['A'], threshold: 40 },
+                                { id: 'C', name: '関連工場の系列', type: 'knowledge', parents: ['B'], threshold: 50 },
+                                { id: 'D', name: '大量生産の工夫（JIT等）', type: 'thinking', parents: ['C'], threshold: 60 },
+                                { id: 'E', name: '消費者ニーズへの対応', type: 'thinking', parents: ['D'], threshold: 70 },
+                                { id: 'F', name: '貿易を通じた世界とのつながり', type: 'knowledge', parents: ['A'], threshold: 80 },
+                                { id: 'G', name: '環境問題と課題の考察', type: 'thinking', parents: ['E', 'F'], threshold: 90 },
+                                { id: 'H', name: '自動車工業の特色まとめ', type: 'thinking', parents: ['G'], threshold: 95 }
                             ];
                         } else {
                             nodes = [
-                                { id: 'A', name: '用語同定', type: 'knowledge', parents: [], threshold: 30 },
-                                { id: 'B', name: '比べ方選択', type: 'thinking', parents: ['A'], threshold: 40 },
-                                { id: 'C', name: '基準設定', type: 'thinking', parents: ['B'], threshold: 50 },
-                                { id: 'D', name: '割合の式', type: 'knowledge', parents: ['C'], threshold: 60 },
-                                { id: 'E', name: '図↔式', type: 'thinking', parents: ['D'], threshold: 70 },
-                                { id: 'F', name: '解釈', type: 'thinking', parents: ['D'], threshold: 80 },
-                                { id: 'G', name: '正当化', type: 'thinking', parents: ['E'], threshold: 85 },
-                                { id: 'H', name: '活用', type: 'thinking', parents: ['F'], threshold: 90 },
-                                { id: 'I', name: '説明', type: 'thinking', parents: ['G'], threshold: 95 }
+                                { id: 'A', name: '割合の意味', type: 'knowledge', parents: [], threshold: 30 },
+                                { id: 'B', name: '関係図・数直線の表現', type: 'thinking', parents: ['A'], threshold: 40 },
+                                { id: 'C', name: '割合を求める式', type: 'knowledge', parents: ['B'], threshold: 50 },
+                                { id: 'D', name: 'もとにする量を求める式', type: 'knowledge', parents: ['B'], threshold: 60 },
+                                { id: 'E', name: '比べられる量を求める式', type: 'knowledge', parents: ['B'], threshold: 70 },
+                                { id: 'F', name: '歩合・百分率', type: 'knowledge', parents: ['A'], threshold: 80 },
+                                { id: 'G', name: '割引・割増しの問題解決', type: 'thinking', parents: ['E', 'F'], threshold: 85 },
+                                { id: 'H', name: '複合的な割合の活用', type: 'thinking', parents: ['G'], threshold: 95 }
                             ];
                         }
 
                         nodes.forEach(node => {
-                            code += node.id + '[' + node.name + ']\\n';
-                            let nodeClass = 'danger';
-                            if (score >= node.threshold) nodeClass = 'success';
-                            else if (score >= node.threshold - 15) nodeClass = 'warning';
-                            code += 'class ' + node.id + ' ' + nodeClass + ';\\n';
+                            const shapeStart = node.type === 'thinking' ? '([' : '[';
+                            const shapeEnd = node.type === 'thinking' ? '])' : ']';
+                            code += node.id + shapeStart + node.name + shapeEnd + '\n';
+                            
+                            const baseClass = node.type === 'thinking' ? 'thinking' : 'knowledge';
+                            let statusClass = 'danger';
+                            if (score >= node.threshold) statusClass = 'success';
+                            else if (score >= node.threshold - 15) statusClass = 'warning';
+                            
+                            code += 'class ' + node.id + ' ' + baseClass + ',' + statusClass + ';\n';
                             
                             node.parents.forEach(pId => {
-                                // 親が理解できていて子が理解できていない場合は赤い破線など、細かく制御も可能
-                                code += pId + ' --> ' + node.id + '\\n';
+                                code += pId + ' --> ' + node.id + '\n';
                             });
                         });
                         return code;
@@ -1067,46 +1073,9 @@ app.get('/', (c) => {
                     selectUnitForLesson(unit) {
                         this.selectedUnit = unit;
                         this.currentView = 'lesson_create';
-                        // 教科ごとのモックデータ初期化
-                        if(unit.subject === '算数') {
-                            this.ismNodes = [
-                                { id: 'A', name: '用語同定', type: 'knowledge', type: 'knowledge', parents: [] },
-                                { id: 'B', name: '比べ方選択', type: 'thinking', parents: ['A'] },
-                                { id: 'C', name: '基準設定', type: 'thinking', parents: ['B'] }
-                            ];
-                            this.nextNodeId = 'D';
-                            this.lessons = [
-                                { name: '第1時', elementId: 'A', rubricA: '用語の意味を正しく理解し、他者に論理的に説明できる。', rubricB: '図や式を用いて正しく理解し、問題を解くことができる。', rubricC: '教師の支援があれば理解し、基本的な問題に取り組むことができる。' },
-                                { name: '第2時', elementId: 'B', rubricA: '適切な比べ方を選択し、なぜその方法が良いか説明できる。', rubricB: '適切な比べ方を選択できる。', rubricC: '支援を受けながら比べ方を選択できる。' },
-                            ];
-                        } else if(unit.subject === '国語') {
-                            this.ismNodes = [
-                                { id: 'A', name: '場面の把握', type: 'knowledge', type: 'knowledge', parents: [] },
-                                { id: 'B', name: '登場人物の心情', parents: ['A'] },
-                                { id: 'C', name: '主題の読み取り', parents: ['B'] }
-                            ];
-                            this.nextNodeId = 'D';
-                            this.lessons = [
-                                { name: '第1時', elementId: 'A', rubricA: '本文の叙述を根拠に深く読み取り、自分の言葉で表現できる。', rubricB: '本文の叙述をもとに正しく読み取ることができる。', rubricC: '支援を受けながら本文の叙述を見つけることができる。' },
-                            ];
-                        } else if(unit.subject === '理科') {
-                            this.ismNodes = [
-                                { id: 'A', name: '問題の見いだし', type: 'knowledge', parents: [] },
-                                { id: 'B', name: '予想・仮説', parents: ['A'] },
-                                { id: 'C', name: '実験の計画・実施', parents: ['B'] }
-                            ];
-                            this.nextNodeId = 'D';
-                            this.lessons = [
-                                { name: '第1時', elementId: 'A', rubricA: '事象を多面的に捉え、他者にわかりやすく説明できる。', rubricB: '必要な情報を収集・整理し、正しく理解できる。', rubricC: '支援を受けながら基本的な事象を捉えることができる。' }
-                            ];
-                        } else {
-                            this.ismNodes = [
-                                { id: 'A', name: '事象の把握', type: 'knowledge', type: 'knowledge', parents: [] },
-                                { id: 'B', name: '要因の分析', parents: ['A'] }
-                            ];
-                            this.nextNodeId = 'C';
-                            this.lessons = [];
-                        }
+                        this.proposeIsm();
+                        this.lessons = [];
+                        this.proposeLessonsAndRubrics();
                         this.updateMermaidPreview('mainMermaid');
                     },
 
@@ -1360,53 +1329,52 @@ app.get('/', (c) => {
                     proposeIsm() {
                         if(this.selectedUnit?.subject === '国語') {
                             this.ismNodes = [
-                                { id: 'A', name: '場面の把握', type: 'knowledge', type: 'knowledge', parents: [] },
-                                { id: 'B', name: '登場人物の確認', type: 'knowledge', parents: ['A'] },
-                                { id: 'C', name: '行動の読み取り', type: 'thinking', parents: ['B'] },
-                                { id: 'D', name: '心情の推測', type: 'thinking', parents: ['C'] },
-                                { id: 'E', name: '情景描写の効果', type: 'thinking', parents: ['C'] },
-                                { id: 'F', name: '心情の変化', type: 'thinking', parents: ['D', 'E'] },
-                                { id: 'G', name: '主題の考察', type: 'thinking', parents: ['F'] },
-                                { id: 'H', name: '自分の考えの形成', type: 'thinking', parents: ['G'] }
+                                { id: 'A', name: '登場人物と設定の確認', type: 'knowledge', parents: [] },
+                                { id: 'B', name: '大造じいさんの計略の読み取り', type: 'knowledge', parents: ['A'] },
+                                { id: 'C', name: '残雪の行動の読み取り', type: 'thinking', parents: ['B'] },
+                                { id: 'D', name: '情景描写が表す意味の理解', type: 'thinking', parents: ['B'] },
+                                { id: 'E', name: '大造じいさんの心情変化の推測', type: 'thinking', parents: ['C', 'D'] },
+                                { id: 'F', name: '残雪に対する認識の変化', type: 'thinking', parents: ['E'] },
+                                { id: 'G', name: '主題（命の尊厳）の考察', type: 'thinking', parents: ['F'] },
+                                { id: 'H', name: '自分の考えの表現', type: 'thinking', parents: ['G'] }
                             ];
                             this.nextNodeId = 'I';
                         } else if(this.selectedUnit?.subject === '理科') {
                             this.ismNodes = [
-                                { id: 'A', name: '事象の提示', type: 'knowledge', type: 'knowledge', parents: [] },
-                                { id: 'B', name: '問題の見いだし', type: 'thinking', parents: ['A'] },
-                                { id: 'C', name: '予想・仮説の設定', type: 'thinking', parents: ['B'] },
-                                { id: 'D', name: '解決方法の立案', type: 'thinking', parents: ['C'] },
-                                { id: 'E', name: '観察・実験の実施', type: 'knowledge', parents: ['D'] },
-                                { id: 'F', name: '結果の整理', type: 'knowledge', parents: ['E'] },
-                                { id: 'G', name: '考察', type: 'thinking', parents: ['F'] },
-                                { id: 'H', name: '結論の導出', type: 'thinking', parents: ['G'] }
+                                { id: 'A', name: 'ふりこの各部名称', type: 'knowledge', parents: [] },
+                                { id: 'B', name: '1往復する時間の測り方', type: 'knowledge', parents: ['A'] },
+                                { id: 'C', name: '周期に影響する要因の仮説', type: 'thinking', parents: ['B'] },
+                                { id: 'D', name: '条件制御による実験計画', type: 'thinking', parents: ['C'] },
+                                { id: 'E', name: '実験の実施と結果の記録', type: 'knowledge', parents: ['D'] },
+                                { id: 'F', name: '結果のグラフ化と傾向の読み取り', type: 'thinking', parents: ['E'] },
+                                { id: 'G', name: '長さのみが関係するとの結論', type: 'thinking', parents: ['F'] },
+                                { id: 'H', name: '日常生活への適用', type: 'thinking', parents: ['G'] }
                             ];
                             this.nextNodeId = 'I';
                         } else if(this.selectedUnit?.subject === '社会') {
                             this.ismNodes = [
-                                { id: 'A', name: '事象の把握', type: 'knowledge', type: 'knowledge', parents: [] },
-                                { id: 'B', name: '問いの生成', type: 'thinking', parents: ['A'] },
-                                { id: 'C', name: '情報の収集', type: 'knowledge', parents: ['B'] },
-                                { id: 'D', name: '情報の読み取り', type: 'knowledge', parents: ['C'] },
-                                { id: 'E', name: '関連付け・意味づけ', type: 'thinking', parents: ['D'] },
-                                { id: 'F', name: '概念の形成', type: 'thinking', parents: ['E'] },
-                                { id: 'G', name: 'まとめ・表現', type: 'thinking', parents: ['F'] }
+                                { id: 'A', name: '工場の分布と立地条件', type: 'knowledge', parents: [] },
+                                { id: 'B', name: '生産工程', type: 'knowledge', parents: ['A'] },
+                                { id: 'C', name: '関連工場の系列', type: 'knowledge', parents: ['B'] },
+                                { id: 'D', name: '大量生産の工夫（JIT等）', type: 'thinking', parents: ['C'] },
+                                { id: 'E', name: '消費者ニーズへの対応', type: 'thinking', parents: ['D'] },
+                                { id: 'F', name: '貿易を通じた世界とのつながり', type: 'knowledge', parents: ['A'] },
+                                { id: 'G', name: '環境問題と課題の考察', type: 'thinking', parents: ['E', 'F'] },
+                                { id: 'H', name: '自動車工業の特色まとめ', type: 'thinking', parents: ['G'] }
                             ];
-                            this.nextNodeId = 'H';
+                            this.nextNodeId = 'I';
                         } else {
-                            // 算数デフォルト
                             this.ismNodes = [
-                                { id: 'A', name: '用語同定', type: 'knowledge', type: 'knowledge', parents: [] },
-                                { id: 'B', name: '比べ方選択', type: 'thinking', parents: ['A'] },
-                                { id: 'C', name: '基準設定', type: 'thinking', parents: ['B'] },
-                                { id: 'D', name: '割合の式', type: 'knowledge', parents: ['C'] },
-                                { id: 'E', name: '図↔式', type: 'thinking', parents: ['D'] },
-                                { id: 'F', name: '解釈', type: 'thinking', parents: ['D'] },
-                                { id: 'G', name: '正当化', type: 'thinking', parents: ['E'] },
-                                { id: 'H', name: '活用', type: 'thinking', parents: ['F'] },
-                                { id: 'I', name: '説明', type: 'thinking', parents: ['G'] }
+                                { id: 'A', name: '割合の意味', type: 'knowledge', parents: [] },
+                                { id: 'B', name: '関係図・数直線の表現', type: 'thinking', parents: ['A'] },
+                                { id: 'C', name: '割合を求める式', type: 'knowledge', parents: ['B'] },
+                                { id: 'D', name: 'もとにする量を求める式', type: 'knowledge', parents: ['B'] },
+                                { id: 'E', name: '比べられる量を求める式', type: 'knowledge', parents: ['B'] },
+                                { id: 'F', name: '歩合・百分率', type: 'knowledge', parents: ['A'] },
+                                { id: 'G', name: '割引・割増しの問題解決', type: 'thinking', parents: ['E', 'F'] },
+                                { id: 'H', name: '複合的な割合の活用', type: 'thinking', parents: ['G'] }
                             ];
-                            this.nextNodeId = 'J';
+                            this.nextNodeId = 'I';
                         }
                         this.updateMermaidPreview();
                     },
@@ -1475,19 +1443,24 @@ app.get('/', (c) => {
                     },
 
                     getMockAnalysisCommentForUnit(seatNo, subject, score) {
-                        if(subject === '算数') {
-                            if(score >= 85) return '構造理解は非常に良好です。「正当化」「説明」の要素まで到達しており、他者に教える活動などを通じてさらに理解を深めることが期待できます。';
-                            if(score >= 70) return '基本的な「割合の式」「図↔式の変換」は定着していますが、応用問題での「解釈」に課題が見られます。図を書いて考える習慣をつけるよう指導してください。';
-                            if(score >= 50) return '「用語同定」はできていますが、「基準設定（どれがもとにする量か）」でつまずく傾向があります。数直線を書いて基準量を意識させる指導が効果的です。';
-                            return '全体的に基礎からの復習が必要です。特に「比べ方選択」の段階での誤りが多いため、具体的な具体物を用いた学習から再スタートすることをおすすめします。';
-                        } else if (subject === '国語') {
-                            if(score >= 85) return '「心情の変化」や「主題の考察」まで深く読み取れています。根拠となる叙述を的確に見つけており、自分の考えを豊かに表現できています。';
-                            if(score >= 60) return '「行動の読み取り」はできていますが、「心情の推測」において、表面的な理解にとどまる傾向があります。登場人物の立場になって考える発問が有効です。';
-                            return '「場面の把握」でつまずいている可能性があります。まずは音読を繰り返し、いつ・どこで・だれが何をしたのかを整理する支援が必要です。';
+                        const subj = subject;
+                        if(subj === '算数') {
+                            if(score >= 85) return '割引・割増しの概念や百分率の変換を自在にこなし、関係図を用いた説明が的確です。他者に教える活動を通じてさらに理解を深めましょう。';
+                            if(score >= 70) return '基本的な3用法の立式はできていますが、歩合や百分率が絡む複合問題での「もとにする量」の把握に課題があります。数直線を書く習慣をつけましょう。';
+                            if(score >= 50) return '「比べられる量÷もとにする量」の公式は暗記していますが、関係図を自力でかくことができず、文章題で立式に迷う傾向があります。';
+                            return '「割合」のイメージが掴めていません。簡単な整数倍の復習から始め、テープ図で視覚的に捉える練習が必要です。';
+                        } else if (subj === '国語') {
+                            if(score >= 85) return '情景描写と大造じいさんの心情変化を深く結びつけ、残雪への「畏敬の念」を自分の言葉で豊かに表現できています。';
+                            if(score >= 60) return '大造じいさんが撃たなかった理由は読み取れていますが、「ただかわいそう」という表面的な理解にとどまっています。ハヤブサとの闘いの場面を再度精読しましょう。';
+                            return 'いつ、どこで、誰が何をしたかという基本的な場面設定の読み取りに混乱が見られます。段落ごとのあらすじ整理から支援してください。';
+                        } else if (subj === '理科') {
+                            if(score >= 85) return '条件制御の重要性を理解し、「長さを変える時は重さと振れ幅を一定にする」という実験計画を自ら立案・遂行できています。';
+                            if(score >= 60) return '「長さが関係する」ことは理解していますが、グラフの読み取りや誤差の処理（平均値の活用）に課題があります。';
+                            return 'ふりこの長さ（支点からおもりの重心まで）の定義が曖昧で、測定にばらつきが出ています。正しい測定方法の指導が必要です。';
                         } else {
-                            if(score >= 85) return '事象を多角的に捉え、関連付けて深く理解できています。';
-                            if(score >= 60) return '基礎的な知識は定着していますが、事象の関連付けに課題があります。';
-                            return '基礎的な事象の把握から丁寧な支援が必要です。';
+                            if(score >= 85) return 'ジャスト・イン・タイム方式や関連工場との系列関係など、効率的な生産の工夫を世界的な競争や環境問題と結びつけて多角的に考察できています。';
+                            if(score >= 60) return '組み立て工程やロボットの導入については理解していますが、立地条件や関連工場との結びつきの理解が不足しています。';
+                            return '自動車ができるまでの基本的な工程の順番が整理できていません。動画や写真資料を活用して、工場の全体像を把握させましょう。';
                         }
                     },
 
@@ -1502,20 +1475,23 @@ app.get('/', (c) => {
                     getMockAnalysisComment(seatNo) {
                         const score = this.getMockScore(seatNo);
                         const subj = this.selectedUnit?.subject || '算数';
-                        
                         if(subj === '算数') {
-                            if(score >= 85) return '構造理解は非常に良好です。「正当化」「説明」の要素まで到達しており、他者に教える活動などを通じてさらに理解を深めることが期待できます。';
-                            if(score >= 70) return '基本的な「割合の式」「図↔式の変換」は定着していますが、応用問題での「解釈」に課題が見られます。図を書いて考える習慣をつけるよう指導してください。';
-                            if(score >= 50) return '「用語同定」はできていますが、「基準設定（どれがもとにする量か）」でつまずく傾向があります。数直線を書いて基準量を意識させる指導が効果的です。';
-                            return '全体的に基礎からの復習が必要です。特に「比べ方選択」の段階での誤りが多いため、具体的な具体物を用いた学習から再スタートすることをおすすめします。';
+                            if(score >= 85) return '割引・割増しの概念や百分率の変換を自在にこなし、関係図を用いた説明が的確です。他者に教える活動を通じてさらに理解を深めましょう。';
+                            if(score >= 70) return '基本的な3用法の立式はできていますが、歩合や百分率が絡む複合問題での「もとにする量」の把握に課題があります。数直線を書く習慣をつけましょう。';
+                            if(score >= 50) return '「比べられる量÷もとにする量」の公式は暗記していますが、関係図を自力でかくことができず、文章題で立式に迷う傾向があります。';
+                            return '「割合」のイメージが掴めていません。簡単な整数倍の復習から始め、テープ図で視覚的に捉える練習が必要です。';
                         } else if (subj === '国語') {
-                            if(score >= 85) return '「心情の変化」や「主題の考察」まで深く読み取れています。根拠となる叙述を的確に見つけており、自分の考えを豊かに表現できています。';
-                            if(score >= 60) return '「行動の読み取り」はできていますが、「心情の推測」において、表面的な理解にとどまる傾向があります。登場人物の立場になって考える発問が有効です。';
-                            return '「場面の把握」でつまずいている可能性があります。まずは音読を繰り返し、いつ・どこで・だれが何をしたのかを整理する支援が必要です。';
+                            if(score >= 85) return '情景描写と大造じいさんの心情変化を深く結びつけ、残雪への「畏敬の念」を自分の言葉で豊かに表現できています。';
+                            if(score >= 60) return '大造じいさんが撃たなかった理由は読み取れていますが、「ただかわいそう」という表面的な理解にとどまっています。ハヤブサとの闘いの場面を再度精読しましょう。';
+                            return 'いつ、どこで、誰が何をしたかという基本的な場面設定の読み取りに混乱が見られます。段落ごとのあらすじ整理から支援してください。';
+                        } else if (subj === '理科') {
+                            if(score >= 85) return '条件制御の重要性を理解し、「長さを変える時は重さと振れ幅を一定にする」という実験計画を自ら立案・遂行できています。';
+                            if(score >= 60) return '「長さが関係する」ことは理解していますが、グラフの読み取りや誤差の処理（平均値の活用）に課題があります。';
+                            return 'ふりこの長さ（支点からおもりの重心まで）の定義が曖昧で、測定にばらつきが出ています。正しい測定方法の指導が必要です。';
                         } else {
-                            if(score >= 85) return '事象を多角的に捉え、関連付けて深く理解できています。';
-                            if(score >= 60) return '基礎的な知識は定着していますが、事象の関連付けに課題があります。';
-                            return '基礎的な事象の把握から丁寧な支援が必要です。';
+                            if(score >= 85) return 'ジャスト・イン・タイム方式や関連工場との系列関係など、効率的な生産の工夫を世界的な競争や環境問題と結びつけて多角的に考察できています。';
+                            if(score >= 60) return '組み立て工程やロボットの導入については理解していますが、立地条件や関連工場との結びつきの理解が不足しています。';
+                            return '自動車ができるまでの基本的な工程の順番が整理できていません。動画や写真資料を活用して、工場の全体像を把握させましょう。';
                         }
                     },
 
@@ -1527,51 +1503,18 @@ app.get('/', (c) => {
 
                     getMockChatLogForSubject(subj, score) {
                         if(subj === '算数') {
-                            if(score >= 80) {
-                                return {
-                                    user1: '割合の式は「比べられる量÷もとにする量」だけど、どうしてこの問題は割り算じゃなくて掛け算になるの？',
-                                    ai1: '良い着眼点ですね！割合の基本の式から、別の量を求める式に変形してみましょう。「比べられる量」を求めるにはどうすればいいでしょうか？',
-                                    user2: 'ああ、「もとにする量 × 割合」になるから掛け算なんだ。',
-                                    ai2: 'その通りです！図に描いてみると、もとにする量が1のとき、求めたい量がどれくらいになるかが視覚的にもわかりやすくなりますよ。'
-                                };
-                            } else if(score >= 50) {
-                                return {
-                                    user1: '割合の式がわからない。どうやって考えればいいの？',
-                                    ai1: 'いきなり式を覚えるのではなく、図に描いてみましょう。もとにする量を1としたとき、比べたい量はどれくらいになりそうかな？',
-                                    user2: 'テープ図で書いてみた。もとにする量が50人で、比べたい量が20人だから、半分より少し少ないくらい？',
-                                    ai2: 'その通り！素晴らしい気づきですね。「もとにする量（50人）」を基準にしていることがよく分かります。では、それを計算で求めるにはどんな式になるでしょうか？'
-                                };
-                            } else {
-                                return {
-                                    user1: '全然わからない。答え教えて。',
-                                    ai1: '答えをそのまま教えることはできませんが、一緒に考えていきましょう。まずは問題文の中から、一番基本となる「もとにする量」を探してみましょう。どれかな？',
-                                    user2: '20人？',
-                                    ai2: '惜しいですね。「全体の〜」や「〜の〇倍」という言葉の前に注目してみてください。「全体の50人」とありますよね。これが「もとにする量」になります。'
-                                };
-                            }
+                            if(score >= 80) return { user1: '2割引きってどう計算するの？', ai1: '2割引きということは、もとの値段の何割で買うことになるかな？', user2: '10割 - 2割で8割か！', ai2: 'その通り！もとの値段に0.8をかければ求められますね。' };
+                            if(score >= 50) return { user1: '割合の式がわからない。', ai1: '図に描いてみましょう。もとにする量を1としたとき、比べたい量はどれくらいになりそうかな？', user2: '半分より少し少ないくらい？', ai2: '素晴らしい！もとにする量を基準に考えられていますね。' };
+                            return { user1: '全然わからない。答え教えて。', ai1: 'まずは問題文の中から、一番基本となる「もとにする量」を探してみましょう。どれかな？', user2: '20人？', ai2: '惜しい。「全体の〜」の前に注目してみてください。' };
                         } else if(subj === '国語') {
-                            if(score >= 70) {
-                                return {
-                                    user1: '大造じいさんはなぜガンを撃たなかったの？',
-                                    ai1: 'いい質問ですね。撃つ直前の大造じいさんの様子を表す言葉を探してみましょう。「強く心を打たれて」とありますが、何に心を打たれたのでしょうか？',
-                                    user2: '残雪が仲間を守ろうとする姿かな。',
-                                    ai2: '素晴らしい読み取りですね！単なる獲物としてではなく、同じ生き物として残雪の気高さを認めたからこそ、撃つことができなかったのですね。'
-                                };
-                            } else {
-                                return {
-                                    user1: '残雪ってどんな鳥？',
-                                    ai1: '物語の最初のほうで、残雪について説明している部分を探してみましょう。「スマートな」という言葉の近くにどんな特徴が書かれていますか？',
-                                    user2: '頭がよくてリーダー？',
-                                    ai2: 'その通りです！ガンの群れを率いる、とても賢くて立派なリーダーとして描かれていますね。'
-                                };
-                            }
+                            if(score >= 70) return { user1: '大造じいさんはなぜガンを撃たなかったの？', ai1: '撃つ直前の様子を表す言葉を探してみましょう。「強く心を打たれて」とありますが、何に心を打たれたのでしょうか？', user2: '残雪が仲間を守ろうとする姿かな。', ai2: '素晴らしい読み取りですね！同じ生き物として気高さを認めたのですね。' };
+                            return { user1: '残雪ってどんな鳥？', ai1: '物語の最初で、残雪について説明している部分を探してみましょう。', user2: '頭がよくてリーダー？', ai2: 'その通り！群れを率いる賢いリーダーとして描かれています。' };
+                        } else if(subj === '理科') {
+                            if(score >= 70) return { user1: '重さを変えても周期は変わらないの？', ai1: '重さだけを変えて、長さと振れ幅を同じにしたふりこを2つ同時に揺らすとどうなるでしょうか？', user2: '一緒に揺れるんだ！', ai2: 'その通り！ガリレオが発見した「ふりこの等時性」ですね。' };
+                            return { user1: 'ふりこの長さってどこからどこまで？', ai1: '支点から、おもりのどこまでを測るのが正確でしょうか？', user2: 'おもりの一番下？', ai2: 'おもりの形が変わっても同じになるように「おもりの中心（重心）」までを測ります。' };
                         } else {
-                            return {
-                                user1: 'AIに質問してみよう',
-                                ai1: '何について一緒に考えましょうか？',
-                                user2: 'この単元のまとめ方を教えて。',
-                                ai2: 'まずは、教科書やノートで学んだキーワードをいくつか挙げてみてください。それらをつなげて文章にしてみましょう。'
-                            };
+                            if(score >= 70) return { user1: 'どうして自動車工場は海の近くに多いの？', ai1: '鉄などの材料を輸入したり、完成した車を輸出したりするのに、海の近くだとどんな利点があるでしょうか？', user2: '船で荷物を運びやすいから！', ai2: '大正解です！臨海部は大きな船が着けるのでとても便利なんですよ。' };
+                            return { user1: 'ジャスト・イン・タイムって何？', ai1: '「必要なものを、必要な時に、必要なだけ」運ぶ工夫です。これによって工場のスペースはどうなるでしょうか？', user2: '部品を置いておく場所がいらなくなる？', ai2: 'その通り！無駄な在庫を持たずに効率よく組み立てられます。' };
                         }
                     },
 
@@ -1580,14 +1523,18 @@ app.get('/', (c) => {
                         const subj = this.selectedUnit?.subject || '算数';
                         
                         if(subj === '算数') {
-                            if(score >= 80) return '割合は「比べられる量÷もとにする量」で求められる。式の変形を使えば、もとにする量や比べられる量も簡単に求められることが分かった。図を描くことで、式が正しいか確かめることもできる。';
-                            if(score >= 50) return '割合は「比べられる量÷もとにする量」で求められる。テープ図を描くと、どれをもとにする量（1）とみるかが分かりやすい。式にすると 20 ÷ 50 = 0.4 になるので、答えは0.4です。';
+                            if(score >= 80) return '割合は「比べられる量÷もとにする量」で求められる。関係図を描くことで、式が正しいか確かめることもできる。';
+                            if(score >= 50) return '割合はテープ図を描くと、どれをもとにする量（1）とみるかが分かりやすい。20 ÷ 50 = 0.4 になります。';
                             return 'もとにする量がどれかを見つけるのが難しかった。割合の式は「比べられる量÷もとにする量」になる。';
                         } else if (subj === '国語') {
-                            if(score >= 70) return '大造じいさんは、残雪の仲間を思う強い心と気高い姿に感動し、ただの鳥から「尊敬するライバル」へと見方が変わったのだと思う。';
-                            return '大造じいさんと残雪の戦いが面白かった。最後にガンを撃たなかったのはかわいそうに思ったからだと思う。';
+                            if(score >= 70) return '大造じいさんは、残雪の気高い姿に感動し、ただの鳥から「尊敬するライバル」へと見方が変わったのだと思う。';
+                            return '最後にガンを撃たなかったのはかわいそうに思ったからだと思う。';
+                        } else if (subj === '理科') {
+                            if(score >= 70) return '実験の結果から、ふりこの1往復する時間は、おもりの重さや振れ幅には関係なく、ふりこの長さだけで決まることが分かった。';
+                            return 'ふりこの長さを変えると速さが変わった。重くしても同じだったのが不思議だった。';
                         } else {
-                            return 'この単元を通して、多くの新しいことを学ぶことができた。生活の中で活かしていきたい。';
+                            if(score >= 70) return '自動車を作るには多くの関連工場が協力しており、ジャスト・イン・タイム方式などで無駄なく組み立てられていることが分かった。';
+                            return '車は機械がたくさんある工場で作られている。海に近い方が便利だと分かった。';
                         }
                     },
 
