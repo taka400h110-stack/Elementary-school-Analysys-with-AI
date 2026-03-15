@@ -189,6 +189,18 @@ teacherApp.get('/logs', async (c) => {
 teacherApp.get('/seed', async (c) => {
   try {
     const stmts = [
+      "DELETE FROM events",
+      "DELETE FROM submissions",
+      "DELETE FROM chat_turns",
+      "DELETE FROM drafts",
+      "DELETE FROM session_logins",
+      "DELETE FROM sessions",
+      "DELETE FROM lessons",
+      "DELETE FROM rubrics",
+      "DELETE FROM edges_S",
+      "DELETE FROM edges_T",
+      "DELETE FROM metrics",
+      "DELETE FROM nodes",
       "DELETE FROM units",
       "DELETE FROM enrollments",
       "DELETE FROM students",
