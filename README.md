@@ -11,7 +11,8 @@
   - 単元末分析（伝達係数tの計算、SP表の出力）
 
 ## URLs
-- **Development Service**: https://3000-ibi1f4g7bdzzqpcu7u3tm-8f57ffe2.sandbox.novita.ai/
+- **Production**: https://elementary-analysis.pages.dev
+- **GitHub**: https://github.com/taka400h110-stack/Elementary-school-Analysys-with-AI
 
 ## Data Architecture
 - **Tech Stack**: Cloudflare Pages / Workers, Hono, Vite, React (Frontend to be developed), Tailwind CSS
@@ -20,13 +21,13 @@
   - `units`, `nodes`, `edges_T`, `rubrics`: 単元・ISM構造・評価基準
   - `sessions`, `drafts`, `chat_turns`, `submissions`: 授業と学習ログ
   - `edges_S`, `metrics`: 生徒の理解構造(map(S))と分析結果
-- **Storage Services**: Cloudflare D1 (Local SQLite used for development)
+- **Storage Services**: Cloudflare D1 
 
 ## User Guide
 現在、バックエンドとデータベースの初期設計、および簡単なステータス画面が実装されています。
-開発用サーバーのURLにアクセスすると、メニューとバックエンドAPIの疎通確認（D1データベース連携含む）が行えます。
+トップ画面にアクセスするとAPIの疎通確認（D1データベース連携含む）が行えます。
 
 ## Deployment
-- **Platform**: Cloudflare Pages (Currently running locally in Sandbox via PM2)
+- **Platform**: Cloudflare Pages
 - **Status**: ✅ Active 
 - **Last Updated**: 2026-03-15

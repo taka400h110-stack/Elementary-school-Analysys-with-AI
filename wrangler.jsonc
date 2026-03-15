@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "webapp",
+  "name": "elementary-analysis",
   "compatibility_date": "2026-03-15",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
@@ -9,8 +9,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "webapp-production",
-      "database_id": "dummy-database-id-for-local"
+      "database_name": "elementary-analysis-db",
+      "database_id": "70602b4f-987b-4c6f-9236-5e261c2f53cb"
     }
   ]
 }
