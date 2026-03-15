@@ -160,6 +160,113 @@ api.post('/units', async (c) => {
   return c.json({ success: true, unit_id: res?.id });
 })
 
+
+// 14. 児童カルテ（個票・個人ISM）取得
+api.get('/students/:seat_no/karte/:unit_id', async (c) => {
+  const seatNo = c.req.param('seat_no');
+  const unitId = c.req.param('unit_id');
+  
+  // 11の分析データと同一のモック計算を利用して、対象児童のデータを抽出
+  const mockT = 0.45;
+  const mockSP = {
+    problems: [
+      { id: "Q1", element: "E1: 割合の定義" },
+      { id: "Q2", element: "E2: 用語同定（くらべる量）" },
+      { id: "Q3", element: "E3: 用語同定（もとにする量）" },
+      { id: "Q4", element: "E4: 割合の式（基本）" },
+      { id: "Q5", element: "E5: 割合の式（応用）" },
+      { id: "Q6", element: "E6: 図の読み取り" },
+      { id: "Q7", element: "E7: くらべ方の選択" },
+      { id: "Q8", element: "E8: 基準の変換" },
+      { id: "Q9", element: "E9: 複数条件の比較" },
+      { id: "Q10", element: "E10: 日常事象への適用" }
+    ],
+    students: [
+      { seat: "01", scores: [1, 1, 1, 1, 1, 1, 1, 1, 1, 0] },
+      { seat: "02", scores: [1, 1, 1, 1, 1, 1, 1, 1, 0, 0] },
+      { seat: "03", scores: [0, 0, 1, 1, 1, 1, 1, 1, 1, 1] },
+      { seat: "04", scores: [1, 1, 1, 1, 1, 1, 0, 0, 0, 0] },
+      { seat: "05", scores: [1, 1, 1, 1, 1, 0, 1, 0, 0, 0] },
+      { seat: "06", scores: [1, 1, 1, 1, 0, 0, 0, 0, 0, 0] },
+      { seat: "07", scores: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0] },
+      { seat: "08", scores: [1, 1, 1, 1, 1, 1, 1, 0, 0, 0] },
+      { seat: "09", scores: [1, 1, 1, 0, 0, 0, 0, 0, 0, 0] },
+      { seat: "10", scores: [1, 1, 0, 0, 0, 0, 0, 0, 0, 0] },
+      { seat: "11", scores: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1] },
+      { seat: "12", scores: [1, 1, 1, 1, 0, 1, 0, 0, 0, 0] },
+      { seat: "13", scores: [1, 1, 1, 1, 1, 0, 0, 0, 0, 0] },
+      { seat: "14", scores: [0, 0, 0, 0, 0, 1, 1, 1, 0, 0] },
+      { seat: "15", scores: [1, 1, 1, 1, 1, 1, 0, 1, 0, 0] },
+      { seat: "16", scores: [1, 1, 1, 0, 1, 0, 0, 0, 0, 0] },
+      { seat: "17", scores: [1, 1, 0, 1, 0, 0, 0, 0, 0, 0] },
+      { seat: "18", scores: [1, 1, 1, 1, 1, 1, 1, 0, 0, 0] },
+      { seat: "19", scores: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+      { seat: "20", scores: [1, 1, 1, 1, 1, 0, 0, 0, 0, 0] }
+    ]
+  };
+
+  const studentCount = mockSP.students.length;
+  const problemCount = mockSP.problems.length;
+  
+  const problemStats = mockSP.problems.map((p, index) => {
+    const correctCount = mockSP.students.filter(s => s.scores[index] === 1).length;
+    return { ...p, correctCount, correctRate: Math.round((correctCount / studentCount) * 100) };
+  });
+
+  mockSP.students.forEach(s => { s.total = s.scores.reduce((a, b) => a + b, 0); });
+  
+  const p_j_array = problemStats.map(p => p.correctCount).sort((a, b) => b - a);
+  mockSP.students.forEach(s => {
+    const r = s.total;
+    if (r === 0 || r === problemCount) { s.cautionIndex = 0.00; return; }
+    let idealSum = 0; for (let i = 0; i < r; i++) idealSum += p_j_array[i];
+    let worstSum = 0; for (let i = 0; i < r; i++) worstSum += p_j_array[problemCount - 1 - i];
+    let actualSum = 0;
+    s.scores.forEach((score, index) => { if (score === 1) actualSum += problemStats[index].correctCount; });
+    const denominator = idealSum - worstSum;
+    s.cautionIndex = denominator === 0 ? 0 : Number(((idealSum - actualSum) / denominator).toFixed(2));
+  });
+
+  const student = mockSP.students.find(s => s.seat === seatNo) || mockSP.students[0];
+  
+  // 個人ISM (map(S)) の Mermaid グラフ生成
+  // 生徒の解答状況(scores)に応じてノードの色を変える
+  let mermaidGraph = `graph TD
+  classDef understood fill:#d1fae5,stroke:#059669,stroke-width:2px;
+  classDef confused fill:#fee2e2,stroke:#dc2626,stroke-width:2px;
+  
+  E1[E1: 割合の定義] --> E2[E2: くらべる量]
+  E1 --> E3[E3: もとにする量]
+  E2 --> E4[E4: 割合の式 基本]
+  E3 --> E4
+  E4 --> E5[E5: 割合の式 応用]
+  E4 --> E6[E6: 図の読み取り]
+  E5 --> E7[E7: くらべ方の選択]
+  E6 --> E7
+  E7 --> E8[E8: 基準の変換]
+  E7 --> E9[E9: 複数条件の比較]
+  E8 --> E10[E10: 日常事象への適用]
+  E9 --> E10
+  `;
+
+  let understoodNodes = [];
+  let confusedNodes = [];
+  student.scores.forEach((score, index) => {
+    const eId = `E${index + 1}`;
+    if (score === 1) understoodNodes.push(eId);
+    else confusedNodes.push(eId);
+  });
+
+  if (understoodNodes.length > 0) mermaidGraph += `\n  class ${understoodNodes.join(',')} understood;`;
+  if (confusedNodes.length > 0) mermaidGraph += `\n  class ${confusedNodes.join(',')} confused;`;
+
+  return c.json({
+    student,
+    problemStats,
+    individual_ism: mermaidGraph
+  });
+})
+
 export { api }
 // 7. AIとの対話（チャットターン）
 api.post('/student/chat', async (c) => {

@@ -63,16 +63,13 @@ const TeacherLayout = (props: { title: string; children: any }) => `
                     <i class="fas fa-home w-6 text-center text-slate-400"></i> <span class="ml-1">ダッシュボード</span>
                 </a>
                 
-                <div class="pt-4 pb-1">
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">授業・分析</p>
-                    <a href="/teacher/logs" class="flex items-center py-2 px-3 rounded hover:bg-slate-700 transition mb-1">
-                        <i class="fas fa-chart-bar w-6 text-center text-slate-400"></i> <span class="ml-1">学習ログ</span>
-                    </a>
-                </div>
+                <a href="/teacher/students" class="flex items-center py-2 px-3 rounded hover:bg-slate-700 transition mb-1">
+                    <i class="fas fa-users w-6 text-center text-slate-400"></i> <span class="ml-1">児童管理・カルテ</span>
+                </a>
                 
                 <div class="pt-4 pb-1">
                     <div class="flex justify-between items-center mb-2 px-1">
-                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">単元管理</p>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">教科・単元</p>
                         <button @click="showAddUnitModal = true" class="text-slate-400 hover:text-white" title="単元を追加">
                             <i class="fas fa-plus"></i>
                         </button>
@@ -92,6 +89,9 @@ const TeacherLayout = (props: { title: string; children: any }) => `
                                         <div class="pl-2 flex flex-col space-y-1 border-l-2 border-slate-600 ml-1">
                                             <a :href="'/teacher/units/' + unit.id + '/ism'" class="text-xs text-slate-400 hover:text-white py-1 px-2 rounded hover:bg-slate-700 block">
                                                 <i class="fas fa-project-diagram mr-1"></i> ISM編集
+                                            </a>
+                                            <a :href="'/teacher/units/' + unit.id + '/logs'" class="text-xs text-slate-400 hover:text-white py-1 px-2 rounded hover:bg-slate-700 block">
+                                                <i class="fas fa-chalkboard-teacher mr-1"></i> 授業ログ
                                             </a>
                                             <a :href="'/teacher/units/' + unit.id + '/test'" class="text-xs text-slate-400 hover:text-white py-1 px-2 rounded hover:bg-slate-700 block">
                                                 <i class="fas fa-edit mr-1"></i> テスト・分析
@@ -1016,7 +1016,195 @@ ui.get('/teacher/units/:unit_id/test', (c) => {
   }))
 })
 
-ui.get('/teacher/logs', (c) => {
+
+ui.get('/teacher/students', (c) => {
+  return c.html(TeacherLayout({
+    title: '児童管理・カルテ',
+    children: `
+      <div x-data="studentManager()" x-init="initData()" class="flex h-full gap-6">
+        <!-- 左ペイン：名簿一覧 -->
+        <div class="w-1/3 bg-white rounded-lg shadow flex flex-col h-[calc(100vh-120px)] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-gray-700">5年 1組 児童一覧</h3>
+                <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">40名</span>
+            </div>
+            <div class="overflow-y-auto flex-grow">
+                <ul>
+                    <template x-for="i in 40" :key="i">
+                        <li @click="selectStudent(i.toString().padStart(2, '0'))" 
+                            class="px-4 py-3 border-b hover:bg-indigo-50 cursor-pointer flex justify-between items-center transition"
+                            :class="selectedSeat === i.toString().padStart(2, '0') ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'border-l-4 border-transparent'">
+                            <span class="font-medium text-gray-700">No. <span x-text="i.toString().padStart(2, '0')"></span></span>
+                            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 右ペイン：児童カルテ詳細 -->
+        <div class="w-2/3 flex flex-col h-[calc(100vh-120px)]">
+            <template x-if="!selectedSeat">
+                <div class="flex-grow bg-white rounded-lg shadow flex flex-col justify-center items-center text-gray-400">
+                    <i class="fas fa-user-graduate text-6xl mb-4 text-gray-300"></i>
+                    <p>左側のリストから児童を選択してください</p>
+                </div>
+            </template>
+            
+            <template x-if="selectedSeat">
+                <div class="flex-grow flex flex-col overflow-hidden">
+                    <div class="bg-white p-4 rounded-lg shadow mb-4 flex justify-between items-center flex-shrink-0">
+                        <h2 class="text-2xl font-bold text-gray-800">No. <span x-text="selectedSeat"></span> のカルテ</h2>
+                        
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm font-bold text-gray-600">表示単元:</label>
+                            <select x-model="selectedUnit" @change="fetchKarte()" class="border rounded p-2 text-sm bg-gray-50 focus:ring-indigo-500">
+                                <template x-for="u in units" :key="u.id">
+                                    <option :value="u.id" x-text="u.subject + ' - ' + u.unit_name"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- カルテの中身 -->
+                    <div class="flex-grow overflow-y-auto space-y-4" x-show="karteData">
+                        
+                        <!-- 概要とスコア -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-white p-5 rounded-lg shadow">
+                                <h4 class="font-bold text-gray-600 mb-3 border-b pb-2">単元末テスト結果</h4>
+                                <div class="flex justify-between items-end">
+                                    <div class="text-4xl font-bold text-indigo-600" x-text="(karteData?.student?.total || 0) + '点'"></div>
+                                    <div class="text-right">
+                                        <p class="text-sm text-gray-500 mb-1">注意係数 (CS)</p>
+                                        <div class="text-lg font-mono" 
+                                            :class="(karteData?.student?.cautionIndex >= 0.5) ? 'text-red-600 font-bold bg-yellow-100 px-2 rounded' : 'text-gray-600'" 
+                                            x-text="karteData?.student?.cautionIndex?.toFixed(2) || '0.00'"></div>
+                                    </div>
+                                </div>
+                                <div x-show="karteData?.student?.cautionIndex >= 0.5" class="mt-3 text-xs text-red-600 bg-red-50 p-2 rounded">
+                                    ⚠️ うっかりミスや、基礎の抜け漏れがあるかもしれません。
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-5 rounded-lg shadow">
+                                <h4 class="font-bold text-gray-600 mb-2 border-b pb-2"><i class="fas fa-robot text-indigo-500 mr-1"></i> AI学習アドバイス</h4>
+                                <div class="text-sm text-gray-700 leading-relaxed overflow-y-auto h-24 custom-scrollbar" x-html="generateAdvice()"></div>
+                            </div>
+                        </div>
+
+                        <!-- 個別ISMマップ (map(S)) -->
+                        <div class="bg-white p-5 rounded-lg shadow">
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <h4 class="font-bold text-gray-600">個別構造チャート map(S) - 学習の定着状況</h4>
+                                <div class="flex space-x-3 text-xs">
+                                    <span class="flex items-center"><span class="w-3 h-3 bg-emerald-100 border border-emerald-600 inline-block mr-1"></span> 定着</span>
+                                    <span class="flex items-center"><span class="w-3 h-3 bg-red-100 border border-red-600 inline-block mr-1"></span> 課題</span>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 border rounded p-4 flex justify-center items-center min-h-[300px] overflow-auto">
+                                <!-- Mermaid render target -->
+                                <div id="mermaid-karte" class="mermaid"></div>
+                            </div>
+                        </div>
+
+                        <!-- 問題別解答詳細 -->
+                        <div class="bg-white p-5 rounded-lg shadow">
+                            <h4 class="font-bold text-gray-600 mb-3 border-b pb-2">問題別解答状況</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-center border-collapse text-sm">
+                                    <thead>
+                                        <tr class="bg-gray-50 border">
+                                            <th class="p-2 border">問題</th>
+                                            <th class="p-2 border text-left">学習要素</th>
+                                            <th class="p-2 border">結果</th>
+                                            <th class="p-2 border text-gray-500">全体正答率</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template x-for="(score, index) in karteData?.student?.scores || []" :key="index">
+                                            <tr class="border hover:bg-gray-50">
+                                                <td class="p-2 border font-bold" x-text="karteData?.problemStats[index].id"></td>
+                                                <td class="p-2 border text-left text-xs" x-text="karteData?.problemStats[index].element"></td>
+                                                <td class="p-2 border text-lg" :class="score === 1 ? 'text-blue-600 font-bold' : 'text-red-500 font-bold'" x-text="score === 1 ? '○' : '×'"></td>
+                                                <td class="p-2 border text-xs text-gray-500" x-text="karteData?.problemStats[index].correctRate + '%'"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </template>
+        </div>
+      </div>
+      
+      <script>
+      function studentManager() {
+          return {
+              selectedSeat: null,
+              units: [],
+              selectedUnit: 1,
+              karteData: null,
+              
+              async initData() {
+                  const res = await fetch('/api/units');
+                  const data = await res.json();
+                  this.units = data.units || [];
+              },
+              
+              async selectStudent(seat) {
+                  this.selectedSeat = seat;
+                  await this.fetchKarte();
+              },
+              
+              async fetchKarte() {
+                  if(!this.selectedSeat || !this.selectedUnit) return;
+                  
+                  const res = await fetch('/api/students/' + this.selectedSeat + '/karte/' + this.selectedUnit);
+                  this.karteData = await res.json();
+                  
+                  // Render Mermaid
+                  this.$nextTick(() => {
+                      const container = document.getElementById('mermaid-karte');
+                      if(container && this.karteData.individual_ism) {
+                          container.removeAttribute('data-processed');
+                          container.innerHTML = this.karteData.individual_ism;
+                          mermaid.init(undefined, container);
+                      }
+                  });
+              },
+              
+              generateAdvice() {
+                  if(!this.karteData) return '';
+                  const s = this.karteData.student;
+                  const pStats = this.karteData.problemStats;
+                  
+                  let weakPoints = [];
+                  s.scores.forEach((score, idx) => {
+                      if(score === 0 && pStats[idx].correctRate >= 50) {
+                          weakPoints.push('「' + pStats[idx].element.split(':')[1].trim() + '」');
+                      }
+                  });
+                  
+                  if(s.total >= 8) {
+                      return '<p class="font-bold text-green-600">よく理解できています！👏</p><p class="mt-1">この調子で次の学習に進みましょう。</p>';
+                  } else if(weakPoints.length > 0) {
+                      return '<p class="font-bold text-red-500">💡 基礎の復習がおすすめ</p><p class="mt-1">みんなが解けている <span class="font-bold text-indigo-700">' + weakPoints.join('、') + '</span> でつまずいています。もう一度ノートを見直してみよう。</p>';
+                  } else {
+                      return '<p class="font-bold text-blue-600">基礎はバッチリです！</p><p class="mt-1">応用問題にチャレンジして、さらに力をつけましょう。</p>';
+                  }
+              }
+          }
+      }
+      </script>
+    `
+  }))
+})
+
+ui.get('/teacher/units/:unit_id/logs', (c) => {
   return c.html(TeacherLayout({
     title: '学習ログ・単元末分析',
     children: `
