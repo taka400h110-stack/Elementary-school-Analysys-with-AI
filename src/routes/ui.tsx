@@ -94,7 +94,10 @@ const TeacherLayout = (props: { title: string; children: any }) => `
                                                 <i class="fas fa-chalkboard-teacher mr-1"></i> 授業ログ
                                             </a>
                                             <a :href="'/teacher/units/' + unit.id + '/test'" class="text-xs text-slate-400 hover:text-white py-1 px-2 rounded hover:bg-slate-700 block">
-                                                <i class="fas fa-edit mr-1"></i> テスト・分析
+                                                <i class="fas fa-edit mr-1"></i> テスト設定
+                                            </a>
+                                            <a :href="'/teacher/units/' + unit.id + '/sp-table'" class="text-xs text-slate-400 hover:text-white py-1 px-2 rounded hover:bg-slate-700 block">
+                                                <i class="fas fa-table mr-1"></i> クラスS-P表
                                             </a>
                                         </div>
                                     </div>
@@ -697,8 +700,12 @@ ui.get('/teacher/units', (c) => {
                                     <span><i class="fas fa-project-diagram w-5 text-center mr-1"></i> ISMマップ作成</span>
                                     <i class="fas fa-chevron-right text-xs"></i>
                                 </a>
-                                <a :href="'/teacher/units/' + unit.id + '/test'" class="flex items-center justify-between bg-emerald-50 hover:bg-emerald-100 text-emerald-700 p-3 rounded transition">
-                                    <span><i class="fas fa-edit w-5 text-center mr-1"></i> 単元末テスト・分析</span>
+                                <a :href="'/teacher/units/' + unit.id + '/test'" class="flex items-center justify-between bg-emerald-50 hover:bg-emerald-100 text-emerald-700 p-3 rounded transition mb-2">
+                                    <span><i class="fas fa-edit w-5 text-center mr-1"></i> テスト設定・入力</span>
+                                    <i class="fas fa-chevron-right text-xs"></i>
+                                </a>
+                                <a :href="'/teacher/units/' + unit.id + '/sp-table'" class="flex items-center justify-between bg-blue-50 hover:bg-blue-100 text-blue-700 p-3 rounded transition">
+                                    <span><i class="fas fa-table w-5 text-center mr-1"></i> クラス全体 S-P表分析</span>
                                     <i class="fas fa-chevron-right text-xs"></i>
                                 </a>
                             </div>
@@ -809,26 +816,21 @@ ui.get('/teacher/units/:unit_id/ism', (c) => {
 })
 
 // === 教師用 ログ・分析画面 ===
+
+// === 教師用 単元末テスト設定画面 ===
 ui.get('/teacher/units/:unit_id/test', (c) => {
   return c.html(TeacherLayout({
     title: '単元末テスト管理',
     children: `
-      <div x-data="unitTestManager()" x-init="initData()">
+      <div x-data="unitTestConfig()" x-init="initData()">
         <div class="flex justify-between items-center border-b pb-2 mb-6">
-            <h2 class="text-2xl font-bold"><i class="fas fa-edit text-emerald-600 mr-2"></i> 単元末テスト管理・分析</h2>
+            <h2 class="text-2xl font-bold"><i class="fas fa-edit text-emerald-600 mr-2"></i> 単元末テスト設定・結果入力</h2>
             <a href="/teacher/units" class="text-indigo-600 hover:underline">&laquo; 単元一覧に戻る</a>
         </div>
         
-        <!-- タブ切り替え -->
-        <div class="flex border-b mb-6">
-            <button @click="tab = 'config'" :class="tab === 'config' ? 'border-b-2 border-emerald-600 text-emerald-600 font-bold' : 'text-gray-500'" class="px-6 py-3">テスト問題設定</button>
-            <button @click="tab = 'analysis'" :class="tab === 'analysis' ? 'border-b-2 border-emerald-600 text-emerald-600 font-bold' : 'text-gray-500'" class="px-6 py-3">S-P表 分析・個票出力</button>
-        </div>
-
-        <!-- テスト設定タブ -->
-        <div x-show="tab === 'config'" class="space-y-6">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h3 class="font-bold text-lg mb-4 text-gray-700 border-b pb-2">テスト問題と学習要素(ISM)の紐づけ</h3>
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-lg shadow border-t-4 border-emerald-500">
+                <h3 class="font-bold text-lg mb-4 text-gray-700 border-b pb-2"><i class="fas fa-link mr-2"></i>テスト問題と学習要素(ISM)の紐づけ</h3>
                 <p class="text-sm text-gray-500 mb-4">テストの各問題が、ISMマップのどの学習要素（ノード）に対応しているかを設定します。これにより正確なS-P表分析が可能になります。</p>
                 
                 <table class="w-full text-left border-collapse text-sm mb-4">
@@ -840,7 +842,7 @@ ui.get('/teacher/units/:unit_id/test', (c) => {
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="p in analysis?.sp_table?.problems || []" :key="p.id">
+                        <template x-for="p in problems" :key="p.id">
                             <tr class="border hover:bg-gray-50">
                                 <td class="p-2 border font-bold text-center" x-text="p.id"></td>
                                 <td class="p-2 border">
@@ -854,137 +856,31 @@ ui.get('/teacher/units/:unit_id/test', (c) => {
                     </tbody>
                 </table>
                 <div class="flex justify-end">
-                    <button class="bg-emerald-500 text-white px-4 py-2 rounded shadow hover:bg-emerald-600">設定を保存</button>
+                    <button class="bg-emerald-500 text-white px-6 py-2 rounded shadow hover:bg-emerald-600 font-bold"><i class="fas fa-save mr-1"></i> 設定を保存</button>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h3 class="font-bold text-lg mb-4 text-gray-700 border-b pb-2">テスト結果データ入力</h3>
-                <p class="text-sm text-gray-500 mb-4">児童の解答データをCSV等でアップロードするか、手入力します。（現在はMVPデモデータが読み込まれます）</p>
-                <div class="border-2 border-dashed border-gray-300 p-8 text-center rounded bg-gray-50">
-                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                    <p class="text-gray-600">CSVファイルをドラッグ＆ドロップ、または<span class="text-blue-500 underline cursor-pointer">ファイルを選択</span></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- 分析タブ (S-P表) -->
-        <div x-show="tab === 'analysis'" class="space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- 全体サマリー -->
-                <div class="col-span-1 bg-white p-6 rounded-lg shadow flex flex-col justify-center items-center text-center">
-                    <h3 class="font-bold text-gray-600 mb-2">クラス全体の伝達係数 (t)</h3>
-                    <div class="text-5xl font-bold text-indigo-600 my-4" x-text="analysis?.t_coefficient"></div>
-                    <div class="text-lg font-semibold px-4 py-1 rounded bg-green-100 text-green-800" x-text="analysis?.interpretation"></div>
-                    <p class="text-xs text-gray-400 mt-4">※t=0.41以上で「よく理解」と判定</p>
-                </div>
-
-                <!-- SP表ダッシュボード -->
-                <div class="col-span-2 bg-white p-6 rounded-lg shadow overflow-x-auto">
-                    <h3 class="font-bold text-gray-600 mb-4">S-P表 (生徒×問題マトリクス)</h3>
-                    <table class="w-full text-center border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-gray-100 border">
-                                <th class="border p-2">生徒 / 問題</th>
-                                <template x-for="p in analysis?.sp_table?.problems" :key="p.id">
-                                    <th class="border p-2 cursor-help" :title="p.element">
-                                        <div x-text="p.id"></div>
-                                        <div class="text-xs text-gray-500 font-normal" x-text="p.correctRate + '%'"></div>
-                                    </th>
-                                </template>
-                                <th class="border p-2 bg-gray-200">合計点</th>
-                                <th class="border p-2 bg-yellow-50" title="注意係数(CS): 0.5以上は注意">注意係数</th>
-                                <th class="border p-2 bg-indigo-50">個票</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="row in analysis?.sp_table?.students" :key="row.seat">
-                                <tr class="border hover:bg-gray-50">
-                                    <td class="border p-2 font-bold" x-text="'No.' + row.seat"></td>
-                                    <template x-for="(score, index) in row.scores" :key="index">
-                                        <td class="border p-2" :class="score === 1 ? 'text-blue-600 font-bold bg-blue-50' : 'text-red-500 bg-red-50'" x-text="score === 1 ? '○' : '×'"></td>
-                                    </template>
-                                    <td class="border p-2 font-bold bg-gray-50" x-text="row.total"></td>
-                                    <td class="border p-2 font-mono text-xs" :class="row.cautionIndex >= 0.5 ? 'text-red-600 font-bold bg-yellow-100' : 'text-gray-500'" x-text="row.cautionIndex.toFixed(2)"></td>
-                                    <td class="border p-2">
-                                        <button @click="openReport(row)" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-3 py-1 rounded shadow">
-                                            <i class="fas fa-file-alt"></i> 出力
-                                        </button>
-                                    </td>
-                                </tr>
-                            </template>
-                            <tr class="bg-gray-100 border">
-                                <td class="border p-2 text-xs font-bold">問題注意係数</td>
-                                <template x-for="p in analysis?.sp_table?.problems" :key="p.id">
-                                    <td class="border p-2 font-mono text-xs" :class="p.cautionIndex >= 0.5 ? 'text-red-600 font-bold bg-yellow-100' : 'text-gray-500'" x-text="p.cautionIndex.toFixed(2)"></td>
-                                </template>
-                                <td class="border p-2 bg-gray-200"></td>
-                                <td class="border p-2 bg-yellow-50"></td>
-                                <td class="border p-2 bg-indigo-50"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 個票モーダル (印刷用領域) -->
-        <div x-show="showReportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style="display: none;">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                <div class="flex justify-between items-center p-4 border-b print:hidden">
-                    <h3 class="font-bold text-lg">学習診断レポート (個票)</h3>
-                    <div>
-                        <button @click="printReport()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2"><i class="fas fa-print"></i> 印刷</button>
-                        <button @click="showReportModal = false" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-                    </div>
-                </div>
+            <div class="bg-white p-6 rounded-lg shadow border-t-4 border-blue-500">
+                <h3 class="font-bold text-lg mb-4 text-gray-700 border-b pb-2"><i class="fas fa-file-upload mr-2"></i>テスト結果データ入力</h3>
+                <p class="text-sm text-gray-500 mb-4">児童の解答データをCSV等でアップロードするか、手入力します。（現在はMVPデモデータが登録済みです）</p>
                 
-                <div id="print-area" class="p-8 overflow-y-auto print:p-0 print:overflow-visible flex-grow">
-                    <div class="text-center mb-6 border-b-2 border-gray-800 pb-4">
-                        <h2 class="text-2xl font-bold tracking-widest mb-2">単元末 学習診断レポート</h2>
-                        <p class="text-gray-600">算数 「割合」 単元</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="border-2 border-dashed border-gray-300 p-8 text-center rounded-lg bg-gray-50 hover:bg-gray-100 transition cursor-pointer flex flex-col justify-center items-center">
+                        <i class="fas fa-cloud-upload-alt text-5xl text-blue-400 mb-3"></i>
+                        <h4 class="font-bold text-gray-700 mb-1">CSVファイルをアップロード</h4>
+                        <p class="text-xs text-gray-500">クリックまたはドラッグ＆ドロップ</p>
                     </div>
                     
-                    <div class="flex justify-between items-end mb-6">
-                        <div class="text-xl">
-                            5年 1組 <span class="font-bold text-2xl ml-2 border-b border-gray-400 inline-block w-16 text-center" x-text="selectedStudent?.seat"></span> 番
+                    <div class="border border-gray-200 p-6 rounded-lg bg-white flex flex-col justify-center items-center text-center">
+                        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl mb-3">
+                            <i class="fas fa-check"></i>
                         </div>
-                        <div class="text-right">
-                            <p class="text-gray-500">あなたのスコア: <span class="text-2xl font-bold text-indigo-600 ml-2" x-text="selectedStudent?.total + '/10'"></span></p>
-                            <p class="text-sm text-gray-500 mt-1" x-show="selectedStudent?.cautionIndex >= 0.5">
-                                <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs border border-yellow-300 font-bold">⚠️ 注意係数: <span x-text="selectedStudent?.cautionIndex?.toFixed(2)"></span></span>
-                                <span class="text-xs ml-1">（うっかりミスや、基礎の抜け漏れがあるかもしれません）</span>
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-6">
-                        <h4 class="font-bold text-lg mb-2 bg-gray-100 p-2 rounded border-l-4 border-indigo-500">解答状況</h4>
-                        <table class="w-full text-center border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50 border">
-                                    <th class="p-2 border text-sm">問題</th>
-                                    <th class="p-2 border text-sm">学習要素</th>
-                                    <th class="p-2 border text-sm">あなたの結果</th>
-                                    <th class="p-2 border text-sm text-gray-500">正答率</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template x-for="(score, index) in selectedStudent?.scores || []" :key="index">
-                                    <tr class="border">
-                                        <td class="p-2 border font-bold" x-text="analysis?.sp_table?.problems[index].id"></td>
-                                        <td class="p-2 border text-left text-sm" x-text="analysis?.sp_table?.problems[index].element"></td>
-                                        <td class="p-2 border text-lg" :class="score === 1 ? 'text-blue-600 font-bold' : 'text-red-500 font-bold'" x-text="score === 1 ? '○' : '×'"></td>
-                                        <td class="p-2 border text-sm text-gray-500" x-text="analysis?.sp_table?.problems[index].correctRate + '%'"></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="bg-indigo-50 p-6 rounded-lg border border-indigo-100">
-                        <h4 class="font-bold text-lg mb-3 text-indigo-800"><i class="fas fa-robot mr-2"></i>AIからの学習アドバイス</h4>
-                        <div class="text-gray-700 leading-relaxed" x-html="generateAdvice()"></div>
+                        <h4 class="font-bold text-gray-800 mb-2">データは登録済みです</h4>
+                        <p class="text-sm text-gray-500 mb-4">20名分の解答データがシステムに保存されています。</p>
+                        
+                        <a href="#" @click.prevent="window.location.href = '/teacher/units/' + unitId + '/sp-table'" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow font-bold w-full">
+                            <i class="fas fa-table mr-1"></i> クラスS-P表を確認する &raquo;
+                        </a>
                     </div>
                 </div>
             </div>
@@ -992,23 +888,18 @@ ui.get('/teacher/units/:unit_id/test', (c) => {
       </div>
       
       <script>
-      function unitTestManager() {
+      function unitTestConfig() {
           return {
-              tab: 'config',
-              
-              
-              
+              unitId: null,
+              problems: [],
               
               async initData() {
-                  
-                  
-              },
-              
-              
-              
-              
-              
-              
+                  this.unitId = window.location.pathname.split('/')[3];
+                  // For MVP, fetch the analysis data just to get the problem list mock
+                  const res = await fetch('/api/sessions/1/analysis');
+                  const data = await res.json();
+                  this.problems = data.sp_table?.problems || [];
+              }
           }
       }
       </script>
@@ -1017,185 +908,110 @@ ui.get('/teacher/units/:unit_id/test', (c) => {
 })
 
 
-ui.get('/teacher/students', (c) => {
+// === 教師用 クラス全体S-P表 分析画面 ===
+ui.get('/teacher/units/:unit_id/sp-table', (c) => {
   return c.html(TeacherLayout({
-    title: '児童管理・カルテ',
+    title: 'クラス全体 S-P表分析',
     children: `
-      <div x-data="studentManager()" x-init="initData()" class="flex h-full gap-6">
-        <!-- 左ペイン：名簿一覧 -->
-        <div class="w-1/3 bg-white rounded-lg shadow flex flex-col h-[calc(100vh-120px)] overflow-hidden">
-            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                <h3 class="font-bold text-gray-700">5年 1組 児童一覧</h3>
-                <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">40名</span>
-            </div>
-            <div class="overflow-y-auto flex-grow">
-                <ul>
-                    <template x-for="i in 40" :key="i">
-                        <li @click="selectStudent(i.toString().padStart(2, '0'))" 
-                            class="px-4 py-3 border-b hover:bg-indigo-50 cursor-pointer flex justify-between items-center transition"
-                            :class="selectedSeat === i.toString().padStart(2, '0') ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'border-l-4 border-transparent'">
-                            <span class="font-medium text-gray-700">No. <span x-text="i.toString().padStart(2, '0')"></span></span>
-                            <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
-                        </li>
-                    </template>
-                </ul>
+      <div x-data="spTableManager()" x-init="initData()">
+        <div class="flex justify-between items-center border-b pb-2 mb-6">
+            <h2 class="text-2xl font-bold"><i class="fas fa-table text-blue-600 mr-2"></i> クラス全体 S-P表分析</h2>
+            <div class="space-x-4">
+                <a href="#" @click.prevent="window.location.href = '/teacher/units/' + unitId + '/test'" class="text-indigo-600 hover:underline"><i class="fas fa-cog"></i> テスト設定に戻る</a>
             </div>
         </div>
         
-        <!-- 右ペイン：児童カルテ詳細 -->
-        <div class="w-2/3 flex flex-col h-[calc(100vh-120px)]">
-            <template x-if="!selectedSeat">
-                <div class="flex-grow bg-white rounded-lg shadow flex flex-col justify-center items-center text-gray-400">
-                    <i class="fas fa-user-graduate text-6xl mb-4 text-gray-300"></i>
-                    <p>左側のリストから児童を選択してください</p>
+        <div class="space-y-6">
+            <!-- 全体サマリー -->
+            <div class="bg-white p-6 rounded-lg shadow flex justify-between items-center border-l-4 border-indigo-500">
+                <div>
+                    <h3 class="font-bold text-gray-700 text-lg mb-1">クラス全体の伝達係数 (t)</h3>
+                    <p class="text-sm text-gray-500">t=0.41以上で「よく理解している」と判定されます。</p>
                 </div>
-            </template>
-            
-            <template x-if="selectedSeat">
-                <div class="flex-grow flex flex-col overflow-hidden">
-                    <div class="bg-white p-4 rounded-lg shadow mb-4 flex justify-between items-center flex-shrink-0">
-                        <h2 class="text-2xl font-bold text-gray-800">No. <span x-text="selectedSeat"></span> のカルテ</h2>
-                        
-                        <div class="flex items-center space-x-2">
-                            <label class="text-sm font-bold text-gray-600">表示単元:</label>
-                            <select x-model="selectedUnit" @change="fetchKarte()" class="border rounded p-2 text-sm bg-gray-50 focus:ring-indigo-500">
-                                <template x-for="u in units" :key="u.id">
-                                    <option :value="u.id" x-text="u.subject + ' - ' + u.unit_name"></option>
-                                </template>
-                            </select>
-                        </div>
+                <div class="flex items-center space-x-6">
+                    <div class="text-5xl font-black text-indigo-600" x-text="analysis?.t_coefficient"></div>
+                    <div class="text-xl font-bold px-6 py-2 rounded-full bg-green-100 text-green-800 shadow-sm" x-text="analysis?.interpretation"></div>
+                </div>
+            </div>
+
+            <!-- SP表ダッシュボード -->
+            <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="font-bold text-gray-800 text-lg">S-P表 (生徒×問題マトリクス)</h3>
+                    <div class="text-xs text-gray-500 flex space-x-4">
+                        <span class="flex items-center"><span class="w-3 h-3 bg-blue-50 inline-block border mr-1"></span>正解 (○)</span>
+                        <span class="flex items-center"><span class="w-3 h-3 bg-red-50 inline-block border mr-1"></span>不正解 (×)</span>
+                        <span class="flex items-center"><span class="w-3 h-3 bg-yellow-100 inline-block border border-yellow-300 mr-1"></span>注意係数0.5以上</span>
                     </div>
-                    
-                    <!-- カルテの中身 -->
-                    <div class="flex-grow overflow-y-auto space-y-4" x-show="karteData">
-                        
-                        <!-- 概要とスコア -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-white p-5 rounded-lg shadow">
-                                <h4 class="font-bold text-gray-600 mb-3 border-b pb-2">単元末テスト結果</h4>
-                                <div class="flex justify-between items-end">
-                                    <div class="text-4xl font-bold text-indigo-600" x-text="(karteData?.student?.total || 0) + '点'"></div>
-                                    <div class="text-right">
-                                        <p class="text-sm text-gray-500 mb-1">注意係数 (CS)</p>
-                                        <div class="text-lg font-mono" 
-                                            :class="(karteData?.student?.cautionIndex >= 0.5) ? 'text-red-600 font-bold bg-yellow-100 px-2 rounded' : 'text-gray-600'" 
-                                            x-text="karteData?.student?.cautionIndex?.toFixed(2) || '0.00'"></div>
+                </div>
+                
+                <table class="w-full text-center border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-gray-100 border">
+                            <th class="border p-2 min-w-[100px]">生徒 / 問題</th>
+                            <template x-for="p in analysis?.sp_table?.problems" :key="p.id">
+                                <th class="border p-2 cursor-help relative group" :title="p.element">
+                                    <div class="font-bold text-gray-700" x-text="p.id"></div>
+                                    <div class="text-[10px] text-gray-500 font-normal mt-1" x-text="'正答率 ' + p.correctRate + '%'"></div>
+                                    
+                                    <!-- Tooltip for element name -->
+                                    <div class="hidden group-hover:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap z-10">
+                                        <span x-text="p.element"></span>
                                     </div>
-                                </div>
-                                <div x-show="karteData?.student?.cautionIndex >= 0.5" class="mt-3 text-xs text-red-600 bg-red-50 p-2 rounded">
-                                    ⚠️ うっかりミスや、基礎の抜け漏れがあるかもしれません。
-                                </div>
-                            </div>
-                            
-                            <div class="bg-white p-5 rounded-lg shadow">
-                                <h4 class="font-bold text-gray-600 mb-2 border-b pb-2"><i class="fas fa-robot text-indigo-500 mr-1"></i> AI学習アドバイス</h4>
-                                <div class="text-sm text-gray-700 leading-relaxed overflow-y-auto h-24 custom-scrollbar" x-html="generateAdvice()"></div>
-                            </div>
-                        </div>
-
-                        <!-- 個別ISMマップ (map(S)) -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <div class="flex justify-between items-center mb-4 border-b pb-2">
-                                <h4 class="font-bold text-gray-600">個別構造チャート map(S) - 学習の定着状況</h4>
-                                <div class="flex space-x-3 text-xs">
-                                    <span class="flex items-center"><span class="w-3 h-3 bg-emerald-100 border border-emerald-600 inline-block mr-1"></span> 定着</span>
-                                    <span class="flex items-center"><span class="w-3 h-3 bg-red-100 border border-red-600 inline-block mr-1"></span> 課題</span>
-                                </div>
-                            </div>
-                            <div class="bg-gray-50 border rounded p-4 flex justify-center items-center min-h-[300px] overflow-auto">
-                                <!-- Mermaid render target -->
-                                <div id="mermaid-karte" class="mermaid"></div>
-                            </div>
-                        </div>
-
-                        <!-- 問題別解答詳細 -->
-                        <div class="bg-white p-5 rounded-lg shadow">
-                            <h4 class="font-bold text-gray-600 mb-3 border-b pb-2">問題別解答状況</h4>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-center border-collapse text-sm">
-                                    <thead>
-                                        <tr class="bg-gray-50 border">
-                                            <th class="p-2 border">問題</th>
-                                            <th class="p-2 border text-left">学習要素</th>
-                                            <th class="p-2 border">結果</th>
-                                            <th class="p-2 border text-gray-500">全体正答率</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <template x-for="(score, index) in karteData?.student?.scores || []" :key="index">
-                                            <tr class="border hover:bg-gray-50">
-                                                <td class="p-2 border font-bold" x-text="karteData?.problemStats[index].id"></td>
-                                                <td class="p-2 border text-left text-xs" x-text="karteData?.problemStats[index].element"></td>
-                                                <td class="p-2 border text-lg" :class="score === 1 ? 'text-blue-600 font-bold' : 'text-red-500 font-bold'" x-text="score === 1 ? '○' : '×'"></td>
-                                                <td class="p-2 border text-xs text-gray-500" x-text="karteData?.problemStats[index].correctRate + '%'"></td>
-                                            </tr>
-                                        </template>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </template>
+                                </th>
+                            </template>
+                            <th class="border p-2 bg-gray-200 w-16">合計点</th>
+                            <th class="border p-2 bg-yellow-50 w-20" title="注意係数(CS): 0.5以上は注意">注意係数</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="row in analysis?.sp_table?.students" :key="row.seat">
+                            <tr class="border hover:bg-gray-50 transition-colors">
+                                <td class="border p-2 font-bold text-gray-700">
+                                    <a :href="'/teacher/students?seat=' + row.seat" class="hover:text-indigo-600 hover:underline">
+                                        No.<span x-text="row.seat"></span>
+                                    </a>
+                                </td>
+                                <template x-for="(score, index) in row.scores" :key="index">
+                                    <td class="border p-2" :class="score === 1 ? 'text-blue-600 font-bold bg-blue-50/30' : 'text-red-500 bg-red-50/50'" x-text="score === 1 ? '○' : '×'"></td>
+                                </template>
+                                <td class="border p-2 font-bold bg-gray-50 text-indigo-900" x-text="row.total"></td>
+                                <td class="border p-2 font-mono text-xs" :class="row.cautionIndex >= 0.5 ? 'text-red-600 font-bold bg-yellow-100 shadow-inner' : 'text-gray-500'" x-text="row.cautionIndex.toFixed(2)"></td>
+                            </tr>
+                        </template>
+                        
+                        <!-- 問題注意係数 (CP) 行 -->
+                        <tr class="bg-gray-100 border-t-2 border-gray-300">
+                            <td class="border p-2 text-xs font-bold text-gray-700">問題注意係数</td>
+                            <template x-for="p in analysis?.sp_table?.problems" :key="p.id">
+                                <td class="border p-2 font-mono text-xs" :class="p.cautionIndex >= 0.5 ? 'text-red-600 font-bold bg-yellow-100 shadow-inner' : 'text-gray-500'" x-text="p.cautionIndex.toFixed(2)"></td>
+                            </template>
+                            <td class="border p-2 bg-gray-200"></td>
+                            <td class="border p-2 bg-yellow-50"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="flex justify-end">
+                <a href="/teacher/students" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg shadow-md font-bold transition flex items-center">
+                    <i class="fas fa-users mr-2"></i> 児童ごとの詳細カルテ（個票）を見る
+                </a>
+            </div>
         </div>
       </div>
       
       <script>
-      function studentManager() {
+      function spTableManager() {
           return {
-              selectedSeat: null,
-              units: [],
-              selectedUnit: 1,
-              karteData: null,
+              unitId: null,
+              analysis: null,
               
               async initData() {
-                  const res = await fetch('/api/units');
-                  const data = await res.json();
-                  this.units = data.units || [];
-              },
-              
-              async selectStudent(seat) {
-                  this.selectedSeat = seat;
-                  await this.fetchKarte();
-              },
-              
-              async fetchKarte() {
-                  if(!this.selectedSeat || !this.selectedUnit) return;
-                  
-                  const res = await fetch('/api/students/' + this.selectedSeat + '/karte/' + this.selectedUnit);
-                  this.karteData = await res.json();
-                  
-                  // Render Mermaid
-                  this.$nextTick(() => {
-                      const container = document.getElementById('mermaid-karte');
-                      if(container && this.karteData.individual_ism) {
-                          container.removeAttribute('data-processed');
-                          container.innerHTML = this.karteData.individual_ism;
-                          mermaid.init(undefined, container);
-                      }
-                  });
-              },
-              
-              generateAdvice() {
-                  if(!this.karteData) return '';
-                  const s = this.karteData.student;
-                  const pStats = this.karteData.problemStats;
-                  
-                  let weakPoints = [];
-                  s.scores.forEach((score, idx) => {
-                      if(score === 0 && pStats[idx].correctRate >= 50) {
-                          weakPoints.push('「' + pStats[idx].element.split(':')[1].trim() + '」');
-                      }
-                  });
-                  
-                  if(s.total >= 8) {
-                      return '<p class="font-bold text-green-600">よく理解できています！👏</p><p class="mt-1">この調子で次の学習に進みましょう。</p>';
-                  } else if(weakPoints.length > 0) {
-                      return '<p class="font-bold text-red-500">💡 基礎の復習がおすすめ</p><p class="mt-1">みんなが解けている <span class="font-bold text-indigo-700">' + weakPoints.join('、') + '</span> でつまずいています。もう一度ノートを見直してみよう。</p>';
-                  } else {
-                      return '<p class="font-bold text-blue-600">基礎はバッチリです！</p><p class="mt-1">応用問題にチャレンジして、さらに力をつけましょう。</p>';
-                  }
+                  this.unitId = window.location.pathname.split('/')[3];
+                  // Fetch analysis data (MVP mock)
+                  const res = await fetch('/api/sessions/1/analysis');
+                  this.analysis = await res.json();
               }
           }
       }
