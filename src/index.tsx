@@ -37,6 +37,7 @@ app.get('/', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>学習分析システム ISM・SP表対応</title>
+        <link rel="icon" href="data:,">
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
         <!-- Alpine.js -->
@@ -974,12 +975,12 @@ app.get('/', (c) => {
 
                     getStudentIsmCode(subject, score) {
                         let nodes = [];
-                        let code = 'graph TD\n';
-                        code += 'classDef knowledge fill:#e0f2fe,stroke:#2563eb,stroke-width:2px;\n';
-                        code += 'classDef thinking fill:#fce7f3,stroke:#db2777,stroke-width:2px;\n';
-                        code += 'classDef success stroke:#10b981,stroke-width:4px;\n';
-                        code += 'classDef warning stroke:#f59e0b,stroke-width:4px;\n';
-                        code += 'classDef danger stroke:#ef4444,stroke-width:4px;\n';
+                        let code = 'graph TD\\n';
+                        code += 'classDef knowledge fill:#e0f2fe,stroke:#2563eb,stroke-width:2px;\\n';
+                        code += 'classDef thinking fill:#fce7f3,stroke:#db2777,stroke-width:2px;\\n';
+                        code += 'classDef success stroke:#10b981,stroke-width:4px;\\n';
+                        code += 'classDef warning stroke:#f59e0b,stroke-width:4px;\\n';
+                        code += 'classDef danger stroke:#ef4444,stroke-width:4px;\\n';
 
                         if(subject === '国語') {
                             nodes = [
@@ -1030,17 +1031,17 @@ app.get('/', (c) => {
                         nodes.forEach(node => {
                             const shapeStart = node.type === 'thinking' ? '([' : '[';
                             const shapeEnd = node.type === 'thinking' ? '])' : ']';
-                            code += node.id + shapeStart + node.name + shapeEnd + '\n';
+                            code += node.id + shapeStart + node.name + shapeEnd + '\\n';
                             
                             const baseClass = node.type === 'thinking' ? 'thinking' : 'knowledge';
                             let statusClass = 'danger';
                             if (score >= node.threshold) statusClass = 'success';
                             else if (score >= node.threshold - 15) statusClass = 'warning';
                             
-                            code += 'class ' + node.id + ' ' + baseClass + ',' + statusClass + ';\n';
+                            code += 'class ' + node.id + ' ' + baseClass + ',' + statusClass + ';\\n';
                             
                             node.parents.forEach(pId => {
-                                code += pId + ' --> ' + node.id + '\n';
+                                code += pId + ' --> ' + node.id + '\\n';
                             });
                         });
                         return code;
