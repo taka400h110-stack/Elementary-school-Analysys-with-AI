@@ -201,6 +201,43 @@ api.get('/sessions/:session_id/logs', async (c) => {
   const chatsRes = await c.env.DB.prepare(`SELECT * FROM chat_turns WHERE session_id = ? ORDER BY turn_number ASC`).bind(sessionId).all()
   const submissionsRes = await c.env.DB.prepare(`SELECT * FROM submissions WHERE session_id = ?`).bind(sessionId).all()
   
+  // --- DEMO DATA INJECTION ---
+  // もしDBにデータがない場合、デモ用に固定のログデータを返す
+  if (studentsRes.results.length === 0) {
+    const demoStudents = [
+      { seat_no: "01", student_uuid: "demo-uuid-01" },
+      { seat_no: "02", student_uuid: "demo-uuid-02" },
+      { seat_no: "03", student_uuid: "demo-uuid-03" }
+    ];
+    
+    const demoDrafts = [
+      { student_uuid: "demo-uuid-01", content: "割合とは、比べる量がもとにする量の何倍かを考えればいいと思う。", created_at: "2026-03-15T09:10:00" },
+      { student_uuid: "demo-uuid-02", content: "もとにする量がわからないから、割り算で求める。", created_at: "2026-03-15T09:12:00" },
+      { student_uuid: "demo-uuid-03", content: "うーん、図に書いてみる。", created_at: "2026-03-15T09:15:00" }
+    ];
+    
+    const demoChats = [
+      { student_uuid: "demo-uuid-01", turn_number: 1, prompt: "割合の式はどう書けばいい？", output: "「比べる量 ÷ もとにする量 = 割合」という式で表せるよ。では、この問題の場合、比べる量はどれかな？", created_at: "2026-03-15T09:11:00" },
+      { student_uuid: "demo-uuid-01", turn_number: 2, prompt: "300円の方？", output: "その通り！では、もとにする量は？", created_at: "2026-03-15T09:12:30" },
+      { student_uuid: "demo-uuid-02", turn_number: 1, prompt: "答えは0.5？", output: "計算は合っているね！どうしてその式になったのか、言葉で説明できるかな？", created_at: "2026-03-15T09:14:00" },
+      { student_uuid: "demo-uuid-03", turn_number: 1, prompt: "わからない", output: "大丈夫、一緒に考えよう。まずは問題に出てくる数字を、数直線に書いてみるとわかりやすいよ。試してみてくれる？", created_at: "2026-03-15T09:16:00" }
+    ];
+    
+    const demoSubmissions = [
+      { student_uuid: "demo-uuid-01", final_content: "比べる量が300円で、もとにする量が500円なので、300 ÷ 500 = 0.6 になります。だから割合は0.6です。", created_at: "2026-03-15T09:20:00" },
+      { student_uuid: "demo-uuid-02", final_content: "答えは0.5。もとにする量を基準にして考えたから。", created_at: "2026-03-15T09:22:00" },
+      { student_uuid: "demo-uuid-03", final_content: "数直線を書いたら、もとにする量が1のときに、比べる量がどれくらいか分かった。割り算で計算できる。", created_at: "2026-03-15T09:25:00" }
+    ];
+    
+    return c.json({
+      students: demoStudents,
+      drafts: demoDrafts,
+      chats: demoChats,
+      submissions: demoSubmissions
+    });
+  }
+  // --- END DEMO DATA INJECTION ---
+
   return c.json({
     students: studentsRes.results,
     drafts: draftsRes.results,
@@ -217,20 +254,349 @@ api.get('/sessions/:session_id/analysis', async (c) => {
   // SP表モック（問題ごとの紐づく要素名も追加）
   const mockSP = {
     problems: [
-      { id: "Q1", element: "E1: 用語同定" },
-      { id: "Q2", element: "E2: 比べ方選択" },
-      { id: "Q3", element: "E3: 基準設定" },
-      { id: "Q4", element: "E4: 割合の式" },
-      { id: "Q5", element: "E5: 図↔式" }
-    ],
+      {
+            "id": "Q1",
+            "element": "E1: 割合の定義"
+      },
+      {
+            "id": "Q2",
+            "element": "E2: 用語同定（くらべる量）"
+      },
+      {
+            "id": "Q3",
+            "element": "E3: 用語同定（もとにする量）"
+      },
+      {
+            "id": "Q4",
+            "element": "E4: 割合の式（基本）"
+      },
+      {
+            "id": "Q5",
+            "element": "E5: 割合の式（応用）"
+      },
+      {
+            "id": "Q6",
+            "element": "E6: 図の読み取り"
+      },
+      {
+            "id": "Q7",
+            "element": "E7: くらべ方の選択"
+      },
+      {
+            "id": "Q8",
+            "element": "E8: 基準の変換"
+      },
+      {
+            "id": "Q9",
+            "element": "E9: 複数条件の比較"
+      },
+      {
+            "id": "Q10",
+            "element": "E10: 日常事象への適用"
+      }
+],
     students: [
-      { seat: "01", scores: [1, 1, 1, 1, 0] },
-      { seat: "02", scores: [1, 1, 1, 0, 0] },
-      { seat: "03", scores: [1, 1, 0, 1, 0] },
-      { seat: "04", scores: [1, 0, 0, 0, 0] },
-      { seat: "05", scores: [1, 1, 1, 1, 1] },
-      { seat: "06", scores: [0, 1, 0, 0, 0] }
-    ]
+      {
+            "seat": "01",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0
+            ]
+      },
+      {
+            "seat": "02",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "03",
+            "scores": [
+                  0,
+                  0,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1
+            ]
+      },
+      {
+            "seat": "04",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "05",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  1,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "06",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "07",
+            "scores": [
+                  1,
+                  0,
+                  1,
+                  0,
+                  1,
+                  0,
+                  1,
+                  0,
+                  1,
+                  0
+            ]
+      },
+      {
+            "seat": "08",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "09",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "10",
+            "scores": [
+                  1,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "11",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1
+            ]
+      },
+      {
+            "seat": "12",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "13",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "14",
+            "scores": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  1,
+                  1,
+                  1,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "15",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  1,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "16",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  0,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "17",
+            "scores": [
+                  1,
+                  1,
+                  0,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "18",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "19",
+            "scores": [
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      },
+      {
+            "seat": "20",
+            "scores": [
+                  1,
+                  1,
+                  1,
+                  1,
+                  1,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+            ]
+      }
+]
   };
 
   
