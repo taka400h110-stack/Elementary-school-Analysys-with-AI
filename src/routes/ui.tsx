@@ -34,6 +34,201 @@ const Layout = (props: { title: string; children: any }) => `
 </html>
 `
 
+
+const TeacherLayout = (props: { title: string; children: any }) => `
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${props.title} | 学習分析 MVP (教師用)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 flex h-screen overflow-hidden" x-data="teacherSidebar()" x-init="initSidebar()">
+    <!-- サイドバー -->
+    <aside class="w-64 bg-slate-800 text-gray-100 flex flex-col h-full shadow-xl z-20 flex-shrink-0">
+        <div class="p-4 bg-slate-900 border-b border-slate-700 flex items-center">
+            <a href="/teacher" class="text-lg font-bold text-white"><i class="fas fa-chart-line mr-2 text-indigo-400"></i>学習分析 MVP</a>
+        </div>
+        
+        <div class="overflow-y-auto flex-grow custom-scrollbar">
+            <nav class="p-4 space-y-2">
+                <a href="/teacher" class="flex items-center py-2 px-3 rounded hover:bg-slate-700 transition">
+                    <i class="fas fa-home w-6 text-center text-slate-400"></i> <span class="ml-1">ダッシュボード</span>
+                </a>
+                
+                <div class="pt-4 pb-1">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">授業・分析</p>
+                    <a href="/teacher/logs" class="flex items-center py-2 px-3 rounded hover:bg-slate-700 transition mb-1">
+                        <i class="fas fa-chart-bar w-6 text-center text-slate-400"></i> <span class="ml-1">学習ログ</span>
+                    </a>
+                </div>
+                
+                <div class="pt-4 pb-1">
+                    <div class="flex justify-between items-center mb-2 px-1">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">単元管理</p>
+                        <button @click="showAddUnitModal = true" class="text-slate-400 hover:text-white" title="単元を追加">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- 教科ごとのアコーディオン -->
+                    <template x-for="(units, subject) in groupedUnits" :key="subject">
+                        <div class="mb-2">
+                            <button @click="toggleSubject(subject)" class="w-full flex justify-between items-center py-2 px-3 rounded hover:bg-slate-700 transition text-left text-sm font-medium">
+                                <span><i class="fas fa-book w-6 text-center text-slate-400"></i> <span class="ml-1" x-text="subject"></span></span>
+                                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-slate-500" :class="expandedSubjects[subject] ? 'rotate-180' : ''"></i>
+                            </button>
+                            <div x-show="expandedSubjects[subject]" class="pl-9 pr-2 py-1 space-y-2 mt-1">
+                                <template x-for="unit in units" :key="unit.id">
+                                    <div class="py-1">
+                                        <div class="text-sm font-bold text-slate-300 py-1" x-text="unit.unit_name"></div>
+                                        <div class="pl-2 flex flex-col space-y-1 border-l-2 border-slate-600 ml-1">
+                                            <a :href="'/teacher/units/' + unit.id + '/ism'" class="text-xs text-slate-400 hover:text-white py-1 px-2 rounded hover:bg-slate-700 block">
+                                                <i class="fas fa-project-diagram mr-1"></i> ISM編集
+                                            </a>
+                                            <a :href="'/teacher/units/' + unit.id + '/test'" class="text-xs text-slate-400 hover:text-white py-1 px-2 rounded hover:bg-slate-700 block">
+                                                <i class="fas fa-edit mr-1"></i> テスト・分析
+                                            </a>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </nav>
+        </div>
+        
+        <div class="p-4 bg-slate-900 border-t border-slate-700 text-sm">
+            <a href="/" class="flex items-center text-slate-400 hover:text-white"><i class="fas fa-sign-out-alt w-6 text-center"></i> <span class="ml-1">トップへ戻る</span></a>
+        </div>
+    </aside>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <!-- 上部ヘッダー -->
+        <header class="bg-white shadow-sm border-b px-6 py-4 flex justify-between items-center z-10 flex-shrink-0">
+            <h1 class="text-xl font-bold text-gray-800">${props.title}</h1>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-500 font-bold bg-gray-100 py-1 px-3 rounded-full"><i class="fas fa-chalkboard-teacher text-indigo-500 mr-1"></i> 山田先生</span>
+                <a href="/student/login" class="bg-indigo-50 text-indigo-700 px-3 py-1.5 text-sm font-bold rounded hover:bg-indigo-100 transition border border-indigo-200">
+                    <i class="fas fa-external-link-alt mr-1"></i> 児童ログイン画面へ
+                </a>
+            </div>
+        </header>
+        
+        <!-- コンテンツエリア -->
+        <div class="flex-1 overflow-y-auto p-6 relative">
+            <div class="max-w-6xl mx-auto">
+                ${props.children}
+            </div>
+        </div>
+    </main>
+
+    <!-- 単元追加モーダル -->
+    <div x-cloak x-show="showAddUnitModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 class="font-bold text-xl mb-4 border-b pb-2"><i class="fas fa-folder-plus text-indigo-500 mr-2"></i>新しい単元を登録</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">教科</label>
+                    <input type="text" x-model="newUnit.subject" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500" placeholder="例: 算数, 国語, 理科">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">単元名</label>
+                    <input type="text" x-model="newUnit.unit_name" class="w-full border rounded p-2 focus:ring-2 focus:ring-indigo-500" placeholder="例: 割合, 小数, ごんぎつね">
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end space-x-3">
+                <button @click="showAddUnitModal = false" class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50 font-medium">キャンセル</button>
+                <button @click="addUnit()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium shadow"><i class="fas fa-check mr-1"></i> 登録する</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function teacherSidebar() {
+        return {
+            units: [],
+            groupedUnits: {},
+            expandedSubjects: {},
+            showAddUnitModal: false,
+            newUnit: { subject: '', unit_name: '' },
+            
+            async initSidebar() {
+                try {
+                    const res = await fetch('/api/units');
+                    const data = await res.json();
+                    this.units = data.units || [];
+                    
+                    // Group by subject
+                    this.groupedUnits = this.units.reduce((acc, unit) => {
+                        if(!acc[unit.subject]) acc[unit.subject] = [];
+                        acc[unit.subject].push(unit);
+                        return acc;
+                    }, {});
+                    
+                    // Default expand all
+                    Object.keys(this.groupedUnits).forEach(subj => {
+                        if(this.expandedSubjects[subj] === undefined) {
+                            this.expandedSubjects[subj] = true;
+                        }
+                    });
+                } catch(e) {
+                    console.error("Sidebar fetch error", e);
+                }
+            },
+            
+            toggleSubject(subject) {
+                this.expandedSubjects[subject] = !this.expandedSubjects[subject];
+            },
+            
+            async addUnit() {
+                if(!this.newUnit.subject || !this.newUnit.unit_name) {
+                    alert('教科と単元名を入力してください');
+                    return;
+                }
+                
+                try {
+                    const res = await fetch('/api/units', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(this.newUnit)
+                    });
+                    const data = await res.json();
+                    if(data.success) {
+                        this.showAddUnitModal = false;
+                        this.newUnit = { subject: '', unit_name: '' };
+                        await this.initSidebar(); // reload
+                    } else {
+                        alert('登録に失敗しました');
+                    }
+                } catch(e) {
+                    alert('通信エラーが発生しました');
+                }
+            }
+        }
+    }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</body>
+</html>
+`;
+
 ui.get('/', (c) => {
   return c.html(Layout({
     title: 'ホーム',
@@ -56,7 +251,7 @@ ui.get('/', (c) => {
 
 // === 教師用画面 ===
 ui.get('/teacher', (c) => {
-  return c.html(Layout({
+  return c.html(TeacherLayout({
     title: '教師ダッシュボード',
     children: `
       <div x-data="teacherDashboard()" x-init="fetchClasses()">
@@ -466,44 +661,58 @@ ui.get('/student/submit', (c) => {
 export { ui }
 // === 教師用 ISM編集画面 ===
 ui.get('/teacher/units', (c) => {
-  return c.html(Layout({
+  return c.html(TeacherLayout({
     title: '単元管理',
     children: `
-      <div>
-        <h2 class="text-2xl font-bold mb-6 border-b pb-2"><i class="fas fa-book text-indigo-600 mr-2"></i> 単元管理ダッシュボード</h2>
+      <div x-data="{ units: [], groupedUnits: {} }" x-init="
+          fetch('/api/units').then(r => r.json()).then(data => {
+              units = data.units || [];
+              groupedUnits = units.reduce((acc, unit) => {
+                  if(!acc[unit.subject]) acc[unit.subject] = [];
+                  acc[unit.subject].push(unit);
+                  return acc;
+              }, {});
+          })
+      ">
+        <div class="flex justify-between items-center mb-6 border-b pb-2">
+            <h2 class="text-2xl font-bold"><i class="fas fa-book text-indigo-600 mr-2"></i> 単元一覧</h2>
+            <button @click="showAddUnitModal = true" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 shadow flex items-center">
+                <i class="fas fa-plus mr-2"></i> 新しい単元を登録
+            </button>
+        </div>
         
-        <div class="bg-white p-6 rounded-lg shadow mb-6">
-            <h3 class="font-bold text-lg mb-4 border-b pb-2">登録済みの単元一覧</h3>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="p-3 border">単元ID</th>
-                            <th class="p-3 border">学年・教科</th>
-                            <th class="p-3 border">単元名</th>
-                            <th class="p-3 border text-center">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- MVPとして1つの単元をモック表示 -->
-                        <tr class="border hover:bg-gray-50">
-                            <td class="p-3 border">1</td>
-                            <td class="p-3 border">小5 算数</td>
-                            <td class="p-3 border font-bold">割合</td>
-                            <td class="p-3 border text-center space-x-2">
-                                <a href="/teacher/units/1/ism" class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded shadow text-sm">
-                                    <i class="fas fa-project-diagram mr-1"></i> ISM作成
+        <template x-for="(unitList, subject) in groupedUnits" :key="subject">
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-gray-700 mb-4 border-l-4 border-indigo-500 pl-3 py-1 flex items-center">
+                    <span x-text="subject"></span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <template x-for="unit in unitList" :key="unit.id">
+                        <div class="bg-white p-6 rounded-lg shadow border border-gray-100 hover:shadow-md transition">
+                            <div class="text-xs text-gray-500 mb-1" x-text="unit.grade ? '小' + unit.grade + ' ' + subject : subject"></div>
+                            <h4 class="font-bold text-lg mb-4 text-gray-800" x-text="unit.unit_name"></h4>
+                            
+                            <div class="space-y-2">
+                                <a :href="'/teacher/units/' + unit.id + '/ism'" class="flex items-center justify-between bg-indigo-50 hover:bg-indigo-100 text-indigo-700 p-3 rounded transition">
+                                    <span><i class="fas fa-project-diagram w-5 text-center mr-1"></i> ISMマップ作成</span>
+                                    <i class="fas fa-chevron-right text-xs"></i>
                                 </a>
-                                <a href="/teacher/units/1/test" class="inline-block bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded shadow text-sm">
-                                    <i class="fas fa-edit mr-1"></i> 単元末テスト・分析
+                                <a :href="'/teacher/units/' + unit.id + '/test'" class="flex items-center justify-between bg-emerald-50 hover:bg-emerald-100 text-emerald-700 p-3 rounded transition">
+                                    <span><i class="fas fa-edit w-5 text-center mr-1"></i> 単元末テスト・分析</span>
+                                    <i class="fas fa-chevron-right text-xs"></i>
                                 </a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
-            <button class="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">
-                <i class="fas fa-plus"></i> 新しい単元を登録 (準備中)
+        </template>
+        
+        <div x-show="Object.keys(groupedUnits).length === 0" class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
+            <i class="fas fa-folder-open text-4xl text-gray-300 mb-3"></i>
+            <p class="text-gray-500 mb-4">まだ登録されている単元がありません</p>
+            <button @click="showAddUnitModal = true" class="text-indigo-600 font-bold hover:underline">
+                最初の単元を登録する
             </button>
         </div>
       </div>
@@ -512,7 +721,7 @@ ui.get('/teacher/units', (c) => {
 })
 
 ui.get('/teacher/units/:unit_id/ism', (c) => {
-  return c.html(Layout({
+  return c.html(TeacherLayout({
     title: '単元管理・ISM編集',
     children: `
       <div x-data="ismEditor()" x-init="fetchISM()">
@@ -601,7 +810,7 @@ ui.get('/teacher/units/:unit_id/ism', (c) => {
 
 // === 教師用 ログ・分析画面 ===
 ui.get('/teacher/units/:unit_id/test', (c) => {
-  return c.html(Layout({
+  return c.html(TeacherLayout({
     title: '単元末テスト管理',
     children: `
       <div x-data="unitTestManager()" x-init="initData()">
@@ -808,7 +1017,7 @@ ui.get('/teacher/units/:unit_id/test', (c) => {
 })
 
 ui.get('/teacher/logs', (c) => {
-  return c.html(Layout({
+  return c.html(TeacherLayout({
     title: '学習ログ・単元末分析',
     children: `
       <div x-data="teacherLogs()" x-init="initData()">

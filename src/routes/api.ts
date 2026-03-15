@@ -126,6 +126,40 @@ api.post('/student/draft', async (c) => {
   return c.json({ success: true, message: '下書きを保存しました' })
 })
 
+
+// 12. 単元一覧取得
+api.get('/units', async (c) => {
+  const unitsRes = await c.env.DB.prepare(`
+    SELECT u.id, u.subject, u.unit_name, c.grade, c.class_no
+    FROM units u
+    LEFT JOIN classes c ON u.class_id = c.id
+    ORDER BY u.subject ASC, u.id ASC
+  `).all();
+  
+  // デモデータ注入 (DBが空の場合)
+  if (unitsRes.results.length === 0) {
+    return c.json({ units: [
+      { id: 1, subject: "算数", unit_name: "割合", grade: 5, class_no: "01" },
+      { id: 2, subject: "算数", unit_name: "小数", grade: 5, class_no: "01" },
+      { id: 3, subject: "国語", unit_name: "ごんぎつね", grade: 5, class_no: "01" }
+    ]});
+  }
+  
+  return c.json({ units: unitsRes.results });
+})
+
+// 13. 単元追加
+api.post('/units', async (c) => {
+  const { subject, unit_name, class_id } = await c.req.json();
+  const cid = class_id || 1; // MVP default
+  
+  const res = await c.env.DB.prepare(`
+    INSERT INTO units (class_id, subject, unit_name) VALUES (?, ?, ?) RETURNING id
+  `).bind(cid, subject, unit_name).first();
+  
+  return c.json({ success: true, unit_id: res?.id });
+})
+
 export { api }
 // 7. AIとの対話（チャットターン）
 api.post('/student/chat', async (c) => {
