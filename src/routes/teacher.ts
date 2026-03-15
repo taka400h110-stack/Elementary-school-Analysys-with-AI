@@ -182,4 +182,41 @@ teacherApp.get('/logs', async (c) => {
   })
 })
 
+
+// ----------------------
+// デバッグ/初期化用
+// ----------------------
+teacherApp.get('/seed', async (c) => {
+  try {
+    const stmts = [
+      "DELETE FROM units",
+      "DELETE FROM enrollments",
+      "DELETE FROM students",
+      "DELETE FROM classes",
+      "DELETE FROM school_years",
+      "INSERT INTO school_years (id, year) VALUES (1, 2026)",
+      "INSERT INTO classes (id, school_year_id, grade, class_no, metadata) VALUES (1, 1, 5, '01', '{\"teacher\": \"山田先生\", \"environment\": \"1人1台\"}')",
+      "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (1, 1, '算数', '割合', '小5算数「割合」', '{}', 1)",
+      "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (2, 1, '国語', '大造じいさんとガン', '小5国語', '{}', 1)",
+      "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (3, 1, '理科', 'ふりこのきまり', '小5理科', '{}', 1)",
+      "INSERT INTO units (id, class_id, subject, unit_name, unit_plan, evaluation_criteria, version) VALUES (4, 1, '社会', '日本の工業生産', '小5社会', '{}', 1)"
+    ];
+    
+    // UUID付きで35人作成
+    for(let i = 1; i <= 35; i++) {
+      const seat = i.toString().padStart(2, '0');
+      const uuid = 'user-uuid-' + seat;
+      stmts.push(`INSERT INTO students (student_uuid) VALUES ('${uuid}')`);
+      stmts.push(`INSERT INTO enrollments (student_uuid, class_id, seat_no) VALUES ('${uuid}', 1, '${seat}')`);
+    }
+    
+    // execute in batch
+    await c.env.DB.batch(stmts.map(s => c.env.DB.prepare(s)));
+    
+    return c.json({ success: true, message: "Seeded successfully!" });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 400);
+  }
+})
+
 export default teacherApp

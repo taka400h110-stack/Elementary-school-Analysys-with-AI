@@ -151,7 +151,12 @@ app.get('/', (c) => {
 
                     <!-- システム管理 (学級管理・単元管理) -->
                     <div x-show="currentView === 'system_manage'">
-                        <h2 class="text-2xl font-semibold mb-4 border-b pb-2">システム・学級・単元管理</h2>
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h2 class="text-2xl font-semibold">システム・学級・単元管理</h2>
+                            <button @click="seedDatabase()" class="bg-red-100 text-red-700 px-3 py-1 rounded text-sm font-bold hover:bg-red-200 border border-red-300">
+                                <i class="fas fa-database mr-1"></i>初期デモデータ投入(全リセット)
+                            </button>
+                        </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <!-- 学級作成 -->
@@ -191,6 +196,7 @@ app.get('/', (c) => {
                                             <th class="border p-2">ID</th>
                                             <th class="border p-2">学年</th>
                                             <th class="border p-2">組</th>
+                                            <th class="border p-2 text-xs">操作</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -199,6 +205,11 @@ app.get('/', (c) => {
                                                 <td class="border p-2 text-center" x-text="cls.id"></td>
                                                 <td class="border p-2 text-center" x-text="cls.grade"></td>
                                                 <td class="border p-2 text-center" x-text="cls.class_no"></td>
+                                                <td class="border p-2 text-center">
+                                                    <button @click="generateRoster(cls.id)" class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs hover:bg-blue-200">
+                                                        <i class="fas fa-users"></i> 名簿生成(35人)
+                                                    </button>
+                                                </td>
                                             </tr>
                                         </template>
                                     </tbody>
@@ -1173,6 +1184,20 @@ app.get('/', (c) => {
                         }
                     },
 
+                    async seedDatabase() {
+                        if(!confirm('データベースを初期化し、デモ用の学級(5年1組)・名簿(35人)・単元(4教科)を投入します。現在のデータは全て消去されます。よろしいですか？')) return;
+                        try {
+                            const res = await fetch('/api/teacher/seed');
+                            const data = await res.json();
+                            if(data.success) {
+                                alert('初期デモデータの投入が完了しました！');
+                                this.loadClasses();
+                                this.loadUnits();
+                            } else alert('エラー: ' + data.error);
+                        } catch(e) {
+                            alert('通信エラー');
+                        }
+                    },
                     async generateRoster(classId) {
                         if(!classId) return alert('学級を選択してください');
                         if(!confirm('出席番号01〜35で名簿を自動生成しますか？')) return;
