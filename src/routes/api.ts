@@ -233,14 +233,11 @@ api.get('/sessions/:session_id/analysis', async (c) => {
     ]
   };
 
-  // 各生徒の合計点を計算し、点数順にソート（S曲線のベース）
-  mockSP.students.forEach(s => {
-    s.total = s.scores.reduce((a, b) => a + b, 0);
-  });
-  mockSP.students.sort((a, b) => b.total - a.total);
-
-  // 問題ごとの正答率を計算（P曲線のベース）
+  
+  // 問題ごとの正答数を計算（P曲線のベース）
   const studentCount = mockSP.students.length;
+  const problemCount = mockSP.problems.length;
+  
   const problemStats = mockSP.problems.map((p, index) => {
     const correctCount = mockSP.students.filter(s => s.scores[index] === 1).length;
     return {
@@ -249,7 +246,76 @@ api.get('/sessions/:session_id/analysis', async (c) => {
       correctRate: Math.round((correctCount / studentCount) * 100)
     };
   });
+
+  // 生徒の合計点
+  mockSP.students.forEach(s => {
+    s.total = s.scores.reduce((a, b) => a + b, 0);
+  });
   
+  // -- 注意係数の計算 --
+  
+  // 生徒の注意係数 (CS)
+  // 各問題の正答数 (p_j) の配列を準備 (降順ソートしておく)
+  const p_j_array = problemStats.map(p => p.correctCount).sort((a, b) => b - a);
+  
+  mockSP.students.forEach(s => {
+    const r = s.total;
+    if (r === 0 || r === problemCount) {
+      s.cautionIndex = 0.00;
+      return;
+    }
+    // 理想パターンのp_j和 (正答率が高いr問)
+    let idealSum = 0;
+    for (let i = 0; i < r; i++) idealSum += p_j_array[i];
+    
+    // 最悪パターンのp_j和 (正答率が低いr問)
+    let worstSum = 0;
+    for (let i = 0; i < r; i++) worstSum += p_j_array[problemCount - 1 - i];
+    
+    // 実際のp_j和
+    let actualSum = 0;
+    s.scores.forEach((score, index) => {
+      if (score === 1) actualSum += problemStats[index].correctCount;
+    });
+    
+    const denominator = idealSum - worstSum;
+    s.cautionIndex = denominator === 0 ? 0 : Number(((idealSum - actualSum) / denominator).toFixed(2));
+  });
+
+  // 問題の注意係数 (CP)
+  // 各生徒の合計点 (t_i) の配列を準備 (降順ソートしておく)
+  const t_i_array = mockSP.students.map(s => s.total).sort((a, b) => b - a);
+  
+  problemStats.forEach((p, index) => {
+    const c = p.correctCount;
+    if (c === 0 || c === studentCount) {
+      p.cautionIndex = 0.00;
+      return;
+    }
+    // 理想パターンのt_i和 (合計点が高いc人)
+    let idealSum = 0;
+    for (let i = 0; i < c; i++) idealSum += t_i_array[i];
+    
+    // 最悪パターンのt_i和 (合計点が低いc人)
+    let worstSum = 0;
+    for (let i = 0; i < c; i++) worstSum += t_i_array[studentCount - 1 - i];
+    
+    // 実際のt_i和
+    let actualSum = 0;
+    mockSP.students.forEach(s => {
+      if (s.scores[index] === 1) actualSum += s.total;
+    });
+    
+    const denominator = idealSum - worstSum;
+    p.cautionIndex = denominator === 0 ? 0 : Number(((idealSum - actualSum) / denominator).toFixed(2));
+  });
+
+  // 表示用に並び替え（生徒は点数降順・注意係数降順、問題は正答率降順）
+  mockSP.students.sort((a, b) => {
+    if (b.total !== a.total) return b.total - a.total;
+    return b.cautionIndex - a.cautionIndex;
+  });
+
   return c.json({
     t_coefficient: mockT,
     interpretation: mockInterpretation,

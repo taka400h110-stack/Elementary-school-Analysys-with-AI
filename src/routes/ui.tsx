@@ -626,6 +626,7 @@ ui.get('/teacher/logs', (c) => {
                                     </th>
                                 </template>
                                 <th class="border p-2 bg-gray-200">合計点</th>
+                                <th class="border p-2 bg-yellow-50" title="注意係数(CS): 0.5以上は注意">注意係数</th>
                                 <th class="border p-2 bg-indigo-50">個票</th>
                             </tr>
                         </thead>
@@ -637,6 +638,7 @@ ui.get('/teacher/logs', (c) => {
                                         <td class="border p-2" :class="score === 1 ? 'text-blue-600 font-bold bg-blue-50' : 'text-red-500 bg-red-50'" x-text="score === 1 ? '○' : '×'"></td>
                                     </template>
                                     <td class="border p-2 font-bold bg-gray-50" x-text="row.total"></td>
+                                    <td class="border p-2 font-mono text-xs" :class="row.cautionIndex >= 0.5 ? 'text-red-600 font-bold bg-yellow-100' : 'text-gray-500'" x-text="row.cautionIndex.toFixed(2)"></td>
                                     <td class="border p-2">
                                         <button @click="openReport(row)" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-3 py-1 rounded shadow">
                                             <i class="fas fa-file-alt"></i> 出力
@@ -644,6 +646,15 @@ ui.get('/teacher/logs', (c) => {
                                     </td>
                                 </tr>
                             </template>
+                            <tr class="bg-gray-100 border">
+                                    <td class="border p-2 text-xs font-bold">問題注意係数</td>
+                                    <template x-for="p in analysis?.sp_table?.problems" :key="p.id">
+                                        <td class="border p-2 font-mono text-xs" :class="p.cautionIndex >= 0.5 ? 'text-red-600 font-bold bg-yellow-100' : 'text-gray-500'" x-text="p.cautionIndex.toFixed(2)"></td>
+                                    </template>
+                                    <td class="border p-2 bg-gray-200"></td>
+                                    <td class="border p-2 bg-yellow-50"></td>
+                                    <td class="border p-2 bg-indigo-50"></td>
+                                </tr>
                         </tbody>
                     </table>
                 </div>
