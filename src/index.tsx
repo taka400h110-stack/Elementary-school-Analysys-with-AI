@@ -1518,6 +1518,7 @@ app.get('/', (c) => {
                         }
                     },
 
+,
                     getMockFinalSubmission(seatNo) {
                         const score = this.getMockScore(seatNo);
                         const subj = this.selectedUnit?.subject || '算数';
