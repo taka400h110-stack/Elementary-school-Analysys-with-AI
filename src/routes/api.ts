@@ -127,3 +127,38 @@ api.post('/student/draft', async (c) => {
 })
 
 export { api }
+// 7. AIとの対話（チャットターン）
+api.post('/student/chat', async (c) => {
+  const { session_id, student_uuid, prompt, turn_number } = await c.req.json()
+  
+  // ※ ここではMVPとして、システム内部のモックAI応答を生成します
+  // 本格運用の際はここにOpenAIなどのAPI呼び出しを追加します
+  const aiResponses = [
+    "なるほど、そう考えたんだね！図に描いてみるとどうなるかな？",
+    "いい着眼点だね。他に比べられる方法はあるかな？",
+    "式に表すとどういう意味になるか、言葉で説明できる？",
+    "その考え方を別の言葉で言い換えてみてくれる？"
+  ]
+  const output = aiResponses[turn_number % aiResponses.length]
+  
+  // DBにチャットログを保存
+  await c.env.DB.prepare(`
+    INSERT INTO chat_turns (session_id, student_uuid, turn_number, tool_name, prompt, output) 
+    VALUES (?, ?, ?, 'System-AI-Mock', ?, ?)
+  `).bind(session_id, student_uuid, turn_number, prompt, output).run()
+  
+  return c.json({ success: true, output })
+})
+
+// 8. 最終提出
+api.post('/student/submit', async (c) => {
+  const { session_id, student_uuid, final_content } = await c.req.json()
+  
+  // 下書きとの差分（diff）計算などは今後の拡張とし、今回はそのまま保存
+  await c.env.DB.prepare(`
+    INSERT INTO submissions (session_id, student_uuid, final_content) 
+    VALUES (?, ?, ?)
+  `).bind(session_id, student_uuid, final_content).run()
+  
+  return c.json({ success: true, message: '提出が完了しました' })
+})

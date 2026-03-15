@@ -271,7 +271,187 @@ ui.get('/student/draft', (c) => {
               },
               
               nextStep() {
-                  alert('（MVP版）つぎはAIチャット画面にすすみます！\\n※今回はデモ用の確認画面までとなります。');
+                  window.location.href = '/student/chat';
+              }
+          }
+      }
+      </script>
+    `
+  }))
+})
+
+// === AIチャット画面 ===
+ui.get('/student/chat', (c) => {
+  return c.html(Layout({
+    title: 'AIとそうだん',
+    children: `
+      <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md flex flex-col h-[80vh]" x-data="studentChat()" x-init="checkLogin()">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-robot text-indigo-500 mr-2"></i> AI先生とそうだんしよう</h2>
+            <button @click="finishChat()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded shadow">
+                そうだんをおわる <i class="fas fa-flag-checkered ml-1"></i>
+            </button>
+        </div>
+        
+        <!-- チャット履歴エリア -->
+        <div class="flex-1 overflow-y-auto p-4 bg-gray-50 rounded mb-4 space-y-4" id="chat-box">
+            <template x-for="(msg, index) in messages" :key="index">
+                <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                    <div :class="msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-white border text-gray-800'" class="max-w-[70%] p-3 rounded-lg shadow">
+                        <div x-text="msg.text" class="text-lg"></div>
+                    </div>
+                </div>
+            </template>
+            <div x-show="loading" class="flex justify-start">
+                <div class="bg-gray-200 text-gray-600 p-3 rounded-lg animate-pulse">AIがかんがえ中...</div>
+            </div>
+        </div>
+
+        <!-- 入力エリア -->
+        <div class="flex gap-2">
+            <input type="text" x-model="inputText" @keydown.enter="sendMessage()" class="flex-1 border rounded-lg p-3 text-lg" placeholder="AIにきいてみたいことをかいてね..." :disabled="loading">
+            <button @click="sendMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow" :disabled="loading">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+      </div>
+
+      <script>
+      function studentChat() {
+          return {
+              student_uuid: '',
+              session_id: '',
+              inputText: '',
+              loading: false,
+              turnCount: 0,
+              messages: [
+                  { role: 'ai', text: 'こんにちは！下書きで書いたことについて、なにか質問や気になることはあるかな？' }
+              ],
+              
+              checkLogin() {
+                  this.student_uuid = localStorage.getItem('student_uuid');
+                  this.session_id = localStorage.getItem('session_id');
+                  if(!this.student_uuid || !this.session_id) {
+                      window.location.href = '/student/login';
+                  }
+              },
+              
+              async sendMessage() {
+                  if(!this.inputText.trim() || this.loading) return;
+                  
+                  const prompt = this.inputText;
+                  this.messages.push({ role: 'user', text: prompt });
+                  this.inputText = '';
+                  this.loading = true;
+                  this.turnCount++;
+                  
+                  // スクロールを一番下へ
+                  this.scrollToBottom();
+
+                  try {
+                      const res = await fetch('/api/student/chat', {
+                          method: 'POST',
+                          headers: {'Content-Type': 'application/json'},
+                          body: JSON.stringify({
+                              student_uuid: this.student_uuid,
+                              session_id: this.session_id,
+                              prompt: prompt,
+                              turn_number: this.turnCount
+                          })
+                      });
+                      
+                      const data = await res.json();
+                      if(data.success) {
+                          this.messages.push({ role: 'ai', text: data.output });
+                      }
+                  } catch (e) {
+                      this.messages.push({ role: 'ai', text: 'ごめんね、通信エラーがおきたみたい。もういちど試してみてね。' });
+                  }
+                  
+                  this.loading = false;
+                  this.scrollToBottom();
+              },
+              
+              scrollToBottom() {
+                  setTimeout(() => {
+                      const box = document.getElementById('chat-box');
+                      if(box) box.scrollTop = box.scrollHeight;
+                  }, 50);
+              },
+
+              finishChat() {
+                  window.location.href = '/student/submit';
+              }
+          }
+      }
+      </script>
+    `
+  }))
+})
+
+// === 最終提出画面 ===
+ui.get('/student/submit', (c) => {
+  return c.html(Layout({
+    title: 'さいしゅうていしゅつ',
+    children: `
+      <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-md" x-data="studentSubmit()" x-init="checkLogin()">
+        <h2 class="text-2xl font-bold mb-6 text-gray-800"><i class="fas fa-check-circle text-green-500 mr-2"></i> さいごのまとめ</h2>
+        
+        <p class="mb-4 text-gray-600">AIとのそうだんをふまえて、じぶんの「さいしゅうてきな考え」をまとめて、ていしゅつしよう！</p>
+        
+        <textarea x-model="finalContent" rows="10" class="w-full border rounded-lg p-4 mb-4 text-lg" placeholder="最終的な式や答え、考えの理由などをかいてね..."></textarea>
+        
+        <div x-show="message" class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" x-text="message"></div>
+
+        <button @click="submitWork()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-lg shadow text-xl" :disabled="submitted" :class="{'opacity-50': submitted}">
+            <i class="fas fa-paper-plane mr-2"></i> 先生にていしゅつする
+        </button>
+      </div>
+
+      <script>
+      function studentSubmit() {
+          return {
+              student_uuid: '',
+              session_id: '',
+              finalContent: '',
+              message: '',
+              submitted: false,
+              
+              checkLogin() {
+                  this.student_uuid = localStorage.getItem('student_uuid');
+                  this.session_id = localStorage.getItem('session_id');
+                  if(!this.student_uuid || !this.session_id) {
+                      window.location.href = '/student/login';
+                  }
+              },
+              
+              async submitWork() {
+                  if(!this.finalContent.trim()) {
+                      alert('なにか書いてからていしゅつしてね');
+                      return;
+                  }
+                  
+                  const res = await fetch('/api/student/submit', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({
+                          student_uuid: this.student_uuid,
+                          session_id: this.session_id,
+                          final_content: this.finalContent
+                      })
+                  });
+                  
+                  const data = await res.json();
+                  if(data.success) {
+                      this.message = '✨ ていしゅつがかんりょうしました！よくがんばったね！';
+                      this.submitted = true;
+                      
+                      // セッション情報をクリアしてトップへ戻すことも可能
+                      setTimeout(() => {
+                          localStorage.clear();
+                          window.location.href = '/';
+                      }, 4000);
+                  }
               }
           }
       }
