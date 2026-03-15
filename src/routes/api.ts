@@ -162,3 +162,74 @@ api.post('/student/submit', async (c) => {
   
   return c.json({ success: true, message: '提出が完了しました' })
 })
+
+// 9. ISM構造データの取得 (map(T))
+api.get('/units/:unit_id/ism', async (c) => {
+  const unitId = c.req.param('unit_id')
+  
+  const nodesRes = await c.env.DB.prepare(`
+    SELECT * FROM nodes WHERE unit_id = ? ORDER BY level ASC, node_code ASC
+  `).bind(unitId).all()
+  
+  const edgesRes = await c.env.DB.prepare(`
+    SELECT e.*, 
+           n1.node_code as from_code, n1.node_name as from_name,
+           n2.node_code as to_code, n2.node_name as to_name
+    FROM edges_T e
+    JOIN nodes n1 ON e.from_node_id = n1.id
+    JOIN nodes n2 ON e.to_node_id = n2.id
+    WHERE e.unit_id = ?
+  `).bind(unitId).all()
+  
+  return c.json({ nodes: nodesRes.results, edges: edgesRes.results })
+})
+
+// 10. セッションの学習ログ一覧取得
+api.get('/sessions/:session_id/logs', async (c) => {
+  const sessionId = c.req.param('session_id')
+  
+  // 参加した児童の一覧
+  const studentsRes = await c.env.DB.prepare(`
+    SELECT DISTINCT e.seat_no, sl.student_uuid
+    FROM session_logins sl
+    JOIN enrollments e ON sl.student_uuid = e.student_uuid
+    WHERE sl.session_id = ?
+    ORDER BY e.seat_no ASC
+  `).bind(sessionId).all()
+  
+  const draftsRes = await c.env.DB.prepare(`SELECT * FROM drafts WHERE session_id = ?`).bind(sessionId).all()
+  const chatsRes = await c.env.DB.prepare(`SELECT * FROM chat_turns WHERE session_id = ? ORDER BY turn_number ASC`).bind(sessionId).all()
+  const submissionsRes = await c.env.DB.prepare(`SELECT * FROM submissions WHERE session_id = ?`).bind(sessionId).all()
+  
+  return c.json({
+    students: studentsRes.results,
+    drafts: draftsRes.results,
+    chats: chatsRes.results,
+    submissions: submissionsRes.results
+  })
+})
+
+// 11. 分析データ取得 (t係数とSP表のMVPモック)
+api.get('/sessions/:session_id/analysis', async (c) => {
+  // 本来は map(T) と map(S) の矢線一致度からエントロピーHと相互情報量Iを計算し t = I/H を求めます。
+  // MVP用として、ダミー計算結果を返します。
+  const mockT = 0.45;
+  const mockInterpretation = "よく理解している";
+  
+  // SP表モック
+  const mockSP = {
+    problems: ["Q1(E1)", "Q2(E2)", "Q3(E3)", "Q4(E4)", "Q5(E5)"],
+    students: [
+      { seat: "01", scores: [1, 1, 1, 1, 0], total: 4 },
+      { seat: "02", scores: [1, 1, 1, 0, 0], total: 3 },
+      { seat: "03", scores: [1, 1, 0, 1, 0], total: 3 },
+      { seat: "04", scores: [1, 0, 0, 0, 0], total: 1 }
+    ]
+  };
+  
+  return c.json({
+    t_coefficient: mockT,
+    interpretation: mockInterpretation,
+    sp_table: mockSP
+  })
+})

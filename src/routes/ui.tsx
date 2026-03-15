@@ -13,14 +13,17 @@ const Layout = (props: { title: string; children: any }) => `
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Alpine.js for lightweight reactivity -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-800">
     <nav class="bg-indigo-600 text-white p-4 shadow-md">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <a href="/" class="text-xl font-bold"><i class="fas fa-chart-line mr-2"></i>学習分析 MVP</a>
             <div class="space-x-4">
-                <a href="/teacher" class="hover:text-indigo-200"><i class="fas fa-chalkboard-teacher"></i> 教師用</a>
-                <a href="/student/login" class="hover:text-indigo-200"><i class="fas fa-user-graduate"></i> 児童用</a>
+                <a href="/teacher" class="hover:text-indigo-200"><i class="fas fa-chalkboard-teacher"></i> クラス管理</a>
+                <a href="/teacher/ism" class="hover:text-indigo-200"><i class="fas fa-project-diagram"></i> ISM編集</a>
+                <a href="/teacher/logs" class="hover:text-indigo-200"><i class="fas fa-chart-bar"></i> ログ・分析</a>
+                <a href="/student/login" class="bg-indigo-800 px-3 py-1 rounded hover:bg-indigo-700 ml-4"><i class="fas fa-user-graduate"></i> 児童ログイン</a>
             </div>
         </div>
     </nav>
@@ -461,3 +464,231 @@ ui.get('/student/submit', (c) => {
 })
 
 export { ui }
+// === 教師用 ISM編集画面 ===
+ui.get('/teacher/ism', (c) => {
+  return c.html(Layout({
+    title: '単元管理・ISM編集',
+    children: `
+      <div x-data="ismEditor()" x-init="fetchISM()">
+        <h2 class="text-2xl font-bold mb-6 border-b pb-2"><i class="fas fa-project-diagram text-indigo-600 mr-2"></i> 単元: 割合 (小5算数) - ISM編集 map(T)</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- サイドバー：要素一覧 -->
+            <div class="col-span-1 bg-white p-4 rounded-lg shadow h-96 overflow-y-auto">
+                <h3 class="font-bold border-b pb-2 mb-4">学習要素 (ノード)</h3>
+                <ul class="space-y-2">
+                    <template x-for="node in nodes" :key="node.id">
+                        <li class="p-2 border rounded bg-gray-50 flex justify-between items-center">
+                            <span x-text="node.node_code + ': ' + node.node_name" class="font-medium text-sm"></span>
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded" x-text="node.type"></span>
+                        </li>
+                    </template>
+                </ul>
+                <button class="mt-4 w-full bg-indigo-50 text-indigo-600 border border-indigo-200 py-2 rounded hover:bg-indigo-100">+ ノード追加 (未実装)</button>
+            </div>
+
+            <!-- メインエリア：Mermaidグラフ表示 -->
+            <div class="col-span-2 bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h3 class="font-bold">構造チャート map(T)</h3>
+                    <button @click="renderGraph()" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">グラフ更新</button>
+                </div>
+                
+                <div class="bg-gray-50 border p-4 rounded min-h-[300px] flex justify-center items-center overflow-auto" id="graph-container">
+                    <div class="mermaid" id="mermaid-view">
+                        <!-- Graph goes here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <script>
+      function ismEditor() {
+          return {
+              nodes: [],
+              edges: [],
+              
+              async fetchISM() {
+                  // MVPでは Unit ID = 1 に固定
+                  const res = await fetch('/api/units/1/ism');
+                  const data = await res.json();
+                  this.nodes = data.nodes;
+                  this.edges = data.edges;
+                  
+                  // mermaid初期化
+                  mermaid.initialize({ startOnLoad: false, theme: 'default' });
+                  setTimeout(() => this.renderGraph(), 100);
+              },
+              
+              async renderGraph() {
+                  let graphDef = 'graph TD\\n';
+                  
+                  // ノードの定義
+                  this.nodes.forEach(n => {
+                      graphDef += \`  \${n.node_code}["\${n.node_code}: \${n.node_name}"]\\n\`;
+                  });
+                  
+                  // エッジの定義
+                  this.edges.forEach(e => {
+                      graphDef += \`  \${e.from_code} --> \${e.to_code}\\n\`;
+                  });
+
+                  const container = document.getElementById('graph-container');
+                  container.innerHTML = '<div class="mermaid" id="mermaid-view"></div>';
+                  const view = document.getElementById('mermaid-view');
+                  view.textContent = graphDef;
+                  
+                  try {
+                      await mermaid.run({ nodes: [view] });
+                  } catch (e) {
+                      console.error("Mermaid rendering failed", e);
+                  }
+              }
+          }
+      }
+      </script>
+    `
+  }))
+})
+
+// === 教師用 ログ・分析画面 ===
+ui.get('/teacher/logs', (c) => {
+  return c.html(Layout({
+    title: '学習ログ・単元末分析',
+    children: `
+      <div x-data="teacherLogs()" x-init="initData()">
+        <h2 class="text-2xl font-bold mb-6 border-b pb-2"><i class="fas fa-chart-bar text-indigo-600 mr-2"></i> 学習ログ・分析 (セッション)</h2>
+        
+        <!-- タブ切り替え -->
+        <div class="flex border-b mb-6">
+            <button @click="tab = 'logs'" :class="tab === 'logs' ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold' : 'text-gray-500'" class="px-6 py-3">児童ログ一覧</button>
+            <button @click="tab = 'analysis'" :class="tab === 'analysis' ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold' : 'text-gray-500'" class="px-6 py-3">単元末分析 (t計算・SP表)</button>
+        </div>
+
+        <!-- 児童ログ一覧タブ -->
+        <div x-show="tab === 'logs'" class="space-y-6">
+            <div class="bg-white p-4 rounded shadow mb-4">
+                <label class="mr-2 font-bold text-gray-700">セッションID:</label>
+                <input type="number" x-model="sessionId" class="border p-2 rounded w-24" placeholder="例: 1">
+                <button @click="fetchLogs()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ml-2">取得</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <template x-for="s in students" :key="s.student_uuid">
+                    <div class="bg-white p-5 rounded-lg shadow border-l-4 border-indigo-500">
+                        <h3 class="font-bold text-lg mb-3">出席番号: <span x-text="s.seat_no" class="text-indigo-600"></span></h3>
+                        
+                        <div class="text-sm space-y-2">
+                            <div class="bg-gray-50 p-2 rounded border">
+                                <span class="font-semibold text-gray-600 block mb-1">下書き:</span>
+                                <span x-text="getDraft(s.student_uuid) || '未提出'"></span>
+                            </div>
+                            
+                            <div class="bg-blue-50 p-2 rounded border">
+                                <span class="font-semibold text-blue-600 block mb-1">AI対話回数:</span>
+                                <span x-text="getChatCount(s.student_uuid) + ' 回'"></span>
+                            </div>
+
+                            <div class="bg-green-50 p-2 rounded border">
+                                <span class="font-semibold text-green-600 block mb-1">最終提出:</span>
+                                <span x-text="getSubmission(s.student_uuid) || '未提出'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <div x-show="students.length === 0" class="text-gray-500 col-span-2 text-center py-10">データがありません。セッションIDを指定して取得してください。</div>
+            </div>
+        </div>
+
+        <!-- 分析タブ -->
+        <div x-show="tab === 'analysis'" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- t係数ダッシュボード -->
+                <div class="col-span-1 bg-white p-6 rounded-lg shadow text-center">
+                    <h3 class="font-bold text-gray-600 mb-2">伝達係数 t (map(T) vs map(S))</h3>
+                    <div class="text-5xl font-extrabold text-indigo-600 my-4" x-text="analysis.t_coefficient || '-'"></div>
+                    <div class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold text-sm" x-text="analysis.interpretation || '-'"></div>
+                    <p class="text-xs text-gray-400 mt-4">※t=0.41以上で「よく理解」と判定</p>
+                </div>
+
+                <!-- SP表ダッシュボード -->
+                <div class="col-span-2 bg-white p-6 rounded-lg shadow overflow-x-auto">
+                    <h3 class="font-bold text-gray-600 mb-4">S-P表 (生徒×問題マトリクス)</h3>
+                    <table class="w-full text-center border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-100 border">
+                                <th class="border p-2">生徒</th>
+                                <template x-for="p in analysis?.sp_table?.problems">
+                                    <th class="border p-2" x-text="p"></th>
+                                </template>
+                                <th class="border p-2 bg-gray-200">合計点</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="row in analysis?.sp_table?.students">
+                                <tr class="border hover:bg-gray-50">
+                                    <td class="border p-2 font-bold" x-text="'No.' + row.seat"></td>
+                                    <template x-for="score in row.scores">
+                                        <td class="border p-2" :class="score === 1 ? 'text-blue-600 font-bold' : 'text-red-500'" x-text="score === 1 ? '○' : '×'"></td>
+                                    </template>
+                                    <td class="border p-2 font-bold bg-gray-50" x-text="row.total"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <script>
+      function teacherLogs() {
+          return {
+              tab: 'logs', // 'logs' or 'analysis'
+              sessionId: 1, // Default session
+              students: [],
+              drafts: [],
+              chats: [],
+              submissions: [],
+              analysis: {},
+              
+              initData() {
+                  this.fetchLogs();
+                  this.fetchAnalysis();
+              },
+              
+              async fetchLogs() {
+                  if(!this.sessionId) return;
+                  const res = await fetch('/api/sessions/' + this.sessionId + '/logs');
+                  const data = await res.json();
+                  this.students = data.students || [];
+                  this.drafts = data.drafts || [];
+                  this.chats = data.chats || [];
+                  this.submissions = data.submissions || [];
+              },
+              
+              async fetchAnalysis() {
+                  const res = await fetch('/api/sessions/1/analysis');
+                  const data = await res.json();
+                  this.analysis = data;
+              },
+              
+              getDraft(uuid) {
+                  const d = this.drafts.find(d => d.student_uuid === uuid);
+                  return d ? d.content : null;
+              },
+              getChatCount(uuid) {
+                  return this.chats.filter(c => c.student_uuid === uuid).length;
+              },
+              getSubmission(uuid) {
+                  const s = this.submissions.find(s => s.student_uuid === uuid);
+                  return s ? s.final_content : null;
+              }
+          }
+      }
+      </script>
+    `
+  }))
+})
+
