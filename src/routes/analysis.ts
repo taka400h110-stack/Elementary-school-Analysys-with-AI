@@ -111,4 +111,40 @@ analysisApp.get('/download/csv', async (c) => {
     }
   });
 })
+
+// 研究者用ダッシュボード向けの統計データ
+analysisApp.get('/stats', async (c) => {
+  return c.json({
+    success: true,
+    stats: {
+      overview: { total_students: 140, avg_score: 68.5, sd_score: 14.2, overall_t_coef: 0.35 },
+      distribution: {
+        labels: ['0-10', '11-20', '21-30', '31-40', '41-50', '51-60', '61-70', '71-80', '81-90', '91-100'],
+        data: [0, 2, 5, 10, 15, 25, 35, 28, 15, 5]
+      },
+      items: [
+        { id: 'Q1', diff: 0.9, disc: 0.15 },
+        { id: 'Q2', diff: 0.85, disc: 0.25 },
+        { id: 'Q3', diff: 0.75, disc: 0.40 },
+        { id: 'Q4', diff: 0.70, disc: 0.50 },
+        { id: 'Q5', diff: 0.65, disc: 0.45 },
+        { id: 'Q6', diff: 0.50, disc: 0.60 },
+        { id: 'Q7', diff: 0.45, disc: 0.55 },
+        { id: 'Q8', diff: 0.40, disc: 0.65 },
+        { id: 'Q9', diff: 0.30, disc: 0.30 },
+        { id: 'Q10', diff: 0.20, disc: 0.10 }
+      ],
+      caution_indices: {
+        labels: ['安定型 (CS<0.5)', '要注意型 (CS>=0.5)', '努力型 (低得点)', '不安定型'],
+        data: [70, 45, 15, 10]
+      },
+      t_coef_trend: {
+        labels: ['単元1(割合)', '単元2(国語)', '単元3(理科)', '単元4(社会)'],
+        data: [0.28, 0.33, 0.35, 0.42]
+      }
+    }
+  })
+})
+
 export default analysisApp
+

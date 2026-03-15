@@ -42,6 +42,8 @@ app.get('/', (c) => {
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
         <!-- Alpine.js -->
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        <!-- Chart.js -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <!-- Mermaid -->
         <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     </head>
@@ -885,13 +887,74 @@ app.get('/', (c) => {
 
                 <!-- ====== 研究者用ビュー ====== -->
                 <div x-show="currentRole === 'researcher'">
-                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">研究者ダッシュボード</h2>
-                    <div class="bg-blue-50 p-6 rounded border border-blue-200 text-center">
-                        <i class="fas fa-lock text-4xl text-blue-300 mb-2"></i>
-                        <h3 class="text-lg font-bold text-blue-800 mb-2">匿名集計データアクセス</h3>
-                        <p class="text-sm text-blue-600 mb-4">全学級・全単元の伝達係数t、SP表、ルーブリックを匿名で集計・ダウンロードします。</p>
-                        <a href="/api/analysis/download/csv" download class="inline-block bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"><i class="fas fa-download mr-2"></i>全データCSV一括ダウンロード</a>
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h2 class="text-2xl font-semibold">研究者ダッシュボード (全体統計分析)</h2>
+                        <div class="flex gap-2">
+                            <button @click="loadResearcherStats()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 font-bold"><i class="fas fa-sync-alt mr-1"></i> データ更新</button>
+                            <a href="/api/analysis/download/csv" download class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-bold"><i class="fas fa-download mr-1"></i> CSVエクスポート</a>
+                        </div>
                     </div>
+                    
+                    <template x-if="!researcherStats">
+                        <div class="p-10 text-center text-gray-500">
+                            <i class="fas fa-spinner fa-spin text-4xl mb-3"></i>
+                            <p>統計データを読み込み中...</p>
+                        </div>
+                    </template>
+
+                    <template x-if="researcherStats">
+                        <div class="space-y-6">
+                            <!-- KPI Cards -->
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div class="bg-white p-4 rounded-lg border shadow-sm border-l-4 border-blue-500">
+                                    <p class="text-sm text-gray-500 font-bold">総分析対象児童数</p>
+                                    <p class="text-2xl font-bold text-gray-800" x-text="researcherStats.overview.total_students + ' 名'"></p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border shadow-sm border-l-4 border-green-500">
+                                    <p class="text-sm text-gray-500 font-bold">全体平均点</p>
+                                    <p class="text-2xl font-bold text-gray-800" x-text="researcherStats.overview.avg_score + ' 点'"></p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border shadow-sm border-l-4 border-yellow-500">
+                                    <p class="text-sm text-gray-500 font-bold">標準偏差 (SD)</p>
+                                    <p class="text-2xl font-bold text-gray-800" x-text="researcherStats.overview.sd_score"></p>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border shadow-sm border-l-4 border-purple-500">
+                                    <p class="text-sm text-gray-500 font-bold">平均伝達係数 (t)</p>
+                                    <p class="text-2xl font-bold text-gray-800" x-text="researcherStats.overview.overall_t_coef"></p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- 得点分布ヒストグラム -->
+                                <div class="bg-white p-4 rounded-lg border shadow-sm">
+                                    <h3 class="font-bold text-gray-700 mb-2 border-b pb-1">得点分布 (ヒストグラム)</h3>
+                                    <canvas id="chartDistribution"></canvas>
+                                </div>
+
+                                <!-- 項目分析 (困難度 vs 識別力) -->
+                                <div class="bg-white p-4 rounded-lg border shadow-sm">
+                                    <h3 class="font-bold text-gray-700 mb-2 border-b pb-1">項目分析 (正答率 vs 識別力)</h3>
+                                    <canvas id="chartItemAnalysis"></canvas>
+                                    <p class="text-xs text-gray-500 mt-2 text-center">※右下に行くほど良問（正答率が適度で、成績上位者が正解しやすい）</p>
+                                </div>
+
+                                <!-- S-P表に基づく学習者タイプ分類 -->
+                                <div class="bg-white p-4 rounded-lg border shadow-sm">
+                                    <h3 class="font-bold text-gray-700 mb-2 border-b pb-1">S-P表 注意指数(CS)に基づく学習者分類</h3>
+                                    <div class="flex justify-center" style="height: 250px;">
+                                        <canvas id="chartCaution"></canvas>
+                                    </div>
+                                </div>
+
+                                <!-- 伝達係数(t)の単元別推移 -->
+                                <div class="bg-white p-4 rounded-lg border shadow-sm">
+                                    <h3 class="font-bold text-gray-700 mb-2 border-b pb-1">伝達係数(t)の推移</h3>
+                                    <canvas id="chartTCoef"></canvas>
+                                    <p class="text-xs text-gray-500 mt-2 text-center">※t値が低いほど、教師の意図(map(T))と生徒の理解(map(S))が一致している</p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
             </div>
@@ -940,6 +1003,8 @@ app.get('/', (c) => {
                     studentTab: 'draft',
                     studentLogin: { seat_no: '', passcode: '' },
                     studentLoginError: '',
+                    researcherStats: null,
+                    charts: {},
                     studentData: {
                         uuid: null,
                         sessionId: null,
@@ -953,6 +1018,8 @@ app.get('/', (c) => {
                         this.checkStatus();
                         this.loadClasses();
                         this.loadUnits();
+                        this.loadResearcherStats();
+                        this.$watch('currentRole', (val) => { if(val === 'researcher') { setTimeout(() => this.renderCharts(), 100); } });
                         
                         // Alpine初期化時に特定のタブを指定してリロードした場合などの初期化処理
                         if(this.currentRole === 'teacher' && !this.selectedClassId) {
@@ -1730,7 +1797,129 @@ app.get('/', (c) => {
                         }
                     },
 
-                    async submitFinal() {
+                    async 
+                    async loadResearcherStats() {
+                        try {
+                            const res = await fetch('/api/analysis/stats');
+                            const data = await res.json();
+                            if(data.success) {
+                                this.researcherStats = data.stats;
+                                if(this.currentRole === 'researcher') {
+                                    setTimeout(() => this.renderCharts(), 100);
+                                }
+                            }
+                        } catch(e) {
+                            console.error('Failed to load stats', e);
+                        }
+                    },
+
+                    renderCharts() {
+                        if (!this.researcherStats) return;
+                        if (!window.Chart) return;
+
+                        // Helper to destroy existing chart
+                        const setupChart = (id, config) => {
+                            if(this.charts[id]) this.charts[id].destroy();
+                            const ctx = document.getElementById(id);
+                            if(ctx) this.charts[id] = new Chart(ctx, config);
+                        };
+
+                        // 1. Distribution Bar Chart
+                        setupChart('chartDistribution', {
+                            type: 'bar',
+                            data: {
+                                labels: this.researcherStats.distribution.labels,
+                                datasets: [{
+                                    label: '人数',
+                                    data: this.researcherStats.distribution.data,
+                                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                                    borderColor: 'rgb(59, 130, 246)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+                        });
+
+                        // 2. Item Analysis Scatter
+                        const scatterData = this.researcherStats.items.map(item => ({
+                            x: item.diff, // Difficulty (正答率)
+                            y: item.disc, // Discrimination (識別力)
+                            id: item.id
+                        }));
+                        setupChart('chartItemAnalysis', {
+                            type: 'scatter',
+                            data: {
+                                datasets: [{
+                                    label: '問題項目',
+                                    data: scatterData,
+                                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                                    borderColor: 'rgb(239, 68, 68)',
+                                    pointRadius: 6,
+                                    pointHoverRadius: 8
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    x: { title: { display: true, text: '正答率 (Difficulty)' }, min: 0, max: 1 },
+                                    y: { title: { display: true, text: '識別力 (Discrimination Index)' }, min: 0, max: 1 }
+                                },
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (ctx) => {
+                                                const d = ctx.raw;
+                                                return d.id + ': 正答率 ' + d.x + ', 識別力 ' + d.y;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        // 3. Caution Indices Doughnut
+                        setupChart('chartCaution', {
+                            type: 'doughnut',
+                            data: {
+                                labels: this.researcherStats.caution_indices.labels,
+                                datasets: [{
+                                    data: this.researcherStats.caution_indices.data,
+                                    backgroundColor: [
+                                        'rgba(16, 185, 129, 0.6)', // 安定
+                                        'rgba(245, 158, 11, 0.6)', // 要注意
+                                        'rgba(59, 130, 246, 0.6)', // 努力
+                                        'rgba(239, 68, 68, 0.6)'   // 不安定
+                                    ]
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false }
+                        });
+
+                        // 4. T-Coefficient Trend Line
+                        setupChart('chartTCoef', {
+                            type: 'line',
+                            data: {
+                                labels: this.researcherStats.t_coef_trend.labels,
+                                datasets: [{
+                                    label: '伝達係数(t)',
+                                    data: this.researcherStats.t_coef_trend.data,
+                                    fill: false,
+                                    borderColor: 'rgb(139, 92, 246)',
+                                    tension: 0.1,
+                                    pointBackgroundColor: 'rgb(139, 92, 246)',
+                                    pointRadius: 5
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    y: { min: 0, max: 0.5, title: { display: true, text: 't値' } }
+                                }
+                            }
+                        });
+                    },
+
+                    submitFinal() {
                         if(!this.studentData.finalContent) return alert('入力してください');
                         if(!confirm('一度提出すると修正できません。提出しますか？')) return;
                         
