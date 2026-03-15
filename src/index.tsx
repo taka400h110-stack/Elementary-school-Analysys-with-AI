@@ -1797,7 +1797,6 @@ app.get('/', (c) => {
                         }
                     },
 
-                    async 
                     async loadResearcherStats() {
                         try {
                             const res = await fetch('/api/analysis/stats');
@@ -1919,7 +1918,7 @@ app.get('/', (c) => {
                         });
                     },
 
-                    submitFinal() {
+                    async submitFinal() {
                         if(!this.studentData.finalContent) return alert('入力してください');
                         if(!confirm('一度提出すると修正できません。提出しますか？')) return;
                         
