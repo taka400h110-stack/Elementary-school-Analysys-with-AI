@@ -607,8 +607,8 @@ ui.get('/teacher/logs', (c) => {
                 <!-- t係数ダッシュボード -->
                 <div class="col-span-1 bg-white p-6 rounded-lg shadow text-center">
                     <h3 class="font-bold text-gray-600 mb-2">伝達係数 t (map(T) vs map(S))</h3>
-                    <div class="text-5xl font-extrabold text-indigo-600 my-4" x-text="analysis.t_coefficient || '-'"></div>
-                    <div class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold text-sm" x-text="analysis.interpretation || '-'"></div>
+                    <div class="text-5xl font-extrabold text-indigo-600 my-4" x-text="analysis?.t_coefficient || '-'"></div>
+                    <div class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold text-sm" x-text="analysis?.interpretation || '-'"></div>
                     <p class="text-xs text-gray-400 mt-4">※t=0.41以上で「よく理解」と判定</p>
                 </div>
 
@@ -618,21 +618,30 @@ ui.get('/teacher/logs', (c) => {
                     <table class="w-full text-center border-collapse text-sm">
                         <thead>
                             <tr class="bg-gray-100 border">
-                                <th class="border p-2">生徒</th>
-                                <template x-for="p in analysis?.sp_table?.problems">
-                                    <th class="border p-2" x-text="p"></th>
+                                <th class="border p-2">生徒 / 問題</th>
+                                <template x-for="p in analysis?.sp_table?.problems" :key="p.id">
+                                    <th class="border p-2 cursor-help" :title="p.element">
+                                        <div x-text="p.id"></div>
+                                        <div class="text-xs text-gray-500 font-normal" x-text="p.correctRate + '%'"></div>
+                                    </th>
                                 </template>
                                 <th class="border p-2 bg-gray-200">合計点</th>
+                                <th class="border p-2 bg-indigo-50">個票</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="row in analysis?.sp_table?.students">
+                            <template x-for="row in analysis?.sp_table?.students" :key="row.seat">
                                 <tr class="border hover:bg-gray-50">
                                     <td class="border p-2 font-bold" x-text="'No.' + row.seat"></td>
-                                    <template x-for="score in row.scores">
-                                        <td class="border p-2" :class="score === 1 ? 'text-blue-600 font-bold' : 'text-red-500'" x-text="score === 1 ? '○' : '×'"></td>
+                                    <template x-for="(score, index) in row.scores" :key="index">
+                                        <td class="border p-2" :class="score === 1 ? 'text-blue-600 font-bold bg-blue-50' : 'text-red-500 bg-red-50'" x-text="score === 1 ? '○' : '×'"></td>
                                     </template>
                                     <td class="border p-2 font-bold bg-gray-50" x-text="row.total"></td>
+                                    <td class="border p-2">
+                                        <button @click="openReport(row)" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-3 py-1 rounded shadow">
+                                            <i class="fas fa-file-alt"></i> 出力
+                                        </button>
+                                    </td>
                                 </tr>
                             </template>
                         </tbody>
@@ -640,7 +649,88 @@ ui.get('/teacher/logs', (c) => {
                 </div>
             </div>
         </div>
+        
+        <!-- 個票モーダル (印刷用領域) -->
+        <div x-show="showReportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" style="display: none;">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+                <!-- モーダルヘッダー (印刷時は非表示) -->
+                <div class="flex justify-between items-center p-4 border-b print:hidden">
+                    <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-clipboard-check mr-2"></i> 学習個票</h3>
+                    <div>
+                        <button @click="printReport()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-2">
+                            <i class="fas fa-print mr-1"></i> 印刷する
+                        </button>
+                        <button @click="showReportModal = false" class="text-gray-500 hover:bg-gray-200 px-3 py-2 rounded">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 個票コンテンツ (印刷対象) -->
+                <div id="print-area" class="p-8 overflow-y-auto print:p-0">
+                    <div class="text-center mb-6">
+                        <h2 class="text-2xl font-bold border-b-2 border-gray-800 pb-2 inline-block">算数「割合」 学習ふりかえりシート</h2>
+                    </div>
+                    
+                    <div class="flex justify-between items-end mb-6">
+                        <div class="text-xl">5年 組 <span class="font-bold border-b border-gray-400 px-4" x-text="selectedStudent?.seat"></span> 番</div>
+                        <div class="text-lg bg-gray-100 px-4 py-2 rounded-lg border">
+                            あなたの得点: <span class="text-3xl font-bold text-indigo-600" x-text="selectedStudent?.total"></span> <span class="text-gray-600 text-sm">/ 5点</span>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-lg mb-2 bg-indigo-100 p-2 rounded">📊 問題ごとの結果と要素</h4>
+                    <table class="w-full text-left border-collapse mb-6">
+                        <thead>
+                            <tr class="bg-gray-50 border-y-2 border-gray-300">
+                                <th class="p-3">問題</th>
+                                <th class="p-3">学習要素</th>
+                                <th class="p-3 text-center">結果</th>
+                                <th class="p-3 text-center">クラス正答率</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(score, index) in selectedStudent?.scores" :key="index">
+                                <tr class="border-b">
+                                    <td class="p-3" x-text="analysis?.sp_table?.problems[index].id"></td>
+                                    <td class="p-3" x-text="analysis?.sp_table?.problems[index].element"></td>
+                                    <td class="p-3 text-center text-xl font-bold" :class="score === 1 ? 'text-blue-600' : 'text-red-500'" x-text="score === 1 ? '○' : '×'"></td>
+                                    <td class="p-3 text-center" x-text="analysis?.sp_table?.problems[index].correctRate + '%'"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+
+                    <h4 class="font-bold text-lg mb-2 bg-yellow-100 p-2 rounded">💡 先生からのアドバイス (AI分析)</h4>
+                    <div class="bg-white border-2 border-yellow-200 p-4 rounded-lg text-gray-800 leading-relaxed min-h-[100px]" x-html="generateAdvice()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
       </div>
+
+      <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20mm;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+        }
+      </style>
 
       <script>
       function teacherLogs() {
@@ -651,7 +741,10 @@ ui.get('/teacher/logs', (c) => {
               drafts: [],
               chats: [],
               submissions: [],
-              analysis: {},
+              analysis: null,
+              
+              showReportModal: false,
+              selectedStudent: null,
               
               initData() {
                   this.fetchLogs();
@@ -684,6 +777,54 @@ ui.get('/teacher/logs', (c) => {
               getSubmission(uuid) {
                   const s = this.submissions.find(s => s.student_uuid === uuid);
                   return s ? s.final_content : null;
+              },
+              
+              openReport(studentData) {
+                  this.selectedStudent = studentData;
+                  this.showReportModal = true;
+              },
+              
+              printReport() {
+                  window.print();
+              },
+              
+              generateAdvice() {
+                  if(!this.selectedStudent || !this.analysis) return '';
+                  
+                  const scores = this.selectedStudent.scores;
+                  const probs = this.analysis.sp_table.problems;
+                  
+                  let weakPoints = [];
+                  let strongPoints = [];
+                  
+                  scores.forEach((s, idx) => {
+                      const p = probs[idx];
+                      if(s === 0) {
+                          // 全体正答率が50%以上なのに間違えた問題は要注意(S-P表の考え方)
+                          if(p.correctRate >= 50) {
+                              weakPoints.push('「' + p.element + '」');
+                          }
+                      } else {
+                          strongPoints.push('「' + p.element + '」');
+                      }
+                  });
+                  
+                  let advice = '';
+                  
+                  if(this.selectedStudent.total === 5) {
+                      advice = '<p class="font-bold text-green-600 mb-2">すばらしい！全問正解です！👏</p>';
+                      advice += '<p>割合の考え方をしっかりと構造的に理解できています。この調子で次の単元もがんばりましょう。</p>';
+                  } else if(weakPoints.length > 0) {
+                      advice = '<p class="font-bold text-red-500 mb-2">💡 ここをふりかえろう！</p>';
+                      advice += '<p>クラスのみんながよくできている問題の中で、あなたがまちがえてしまったところがあります。</p>';
+                      advice += '<p class="mt-2 text-indigo-700 font-bold">⇒ 復習おすすめ要素: ' + weakPoints.join('、') + '</p>';
+                      advice += '<p class="mt-2">この要素が、次の問題を解くための大切な「土台（前提）」になっているかもしれません。ノートをもう一度見直してみよう！</p>';
+                  } else {
+                      advice = '<p class="font-bold text-blue-600 mb-2">よくがんばりました！</p>';
+                      advice += '<p>基礎的な部分は理解できています。まちがえた問題は少し難しい応用問題なので、先生の解説をよく聞いてみましょう。</p>';
+                  }
+                  
+                  return advice;
               }
           }
       }

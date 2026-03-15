@@ -211,25 +211,51 @@ api.get('/sessions/:session_id/logs', async (c) => {
 
 // 11. 分析データ取得 (t係数とSP表のMVPモック)
 api.get('/sessions/:session_id/analysis', async (c) => {
-  // 本来は map(T) と map(S) の矢線一致度からエントロピーHと相互情報量Iを計算し t = I/H を求めます。
-  // MVP用として、ダミー計算結果を返します。
   const mockT = 0.45;
   const mockInterpretation = "よく理解している";
   
-  // SP表モック
+  // SP表モック（問題ごとの紐づく要素名も追加）
   const mockSP = {
-    problems: ["Q1(E1)", "Q2(E2)", "Q3(E3)", "Q4(E4)", "Q5(E5)"],
+    problems: [
+      { id: "Q1", element: "E1: 用語同定" },
+      { id: "Q2", element: "E2: 比べ方選択" },
+      { id: "Q3", element: "E3: 基準設定" },
+      { id: "Q4", element: "E4: 割合の式" },
+      { id: "Q5", element: "E5: 図↔式" }
+    ],
     students: [
-      { seat: "01", scores: [1, 1, 1, 1, 0], total: 4 },
-      { seat: "02", scores: [1, 1, 1, 0, 0], total: 3 },
-      { seat: "03", scores: [1, 1, 0, 1, 0], total: 3 },
-      { seat: "04", scores: [1, 0, 0, 0, 0], total: 1 }
+      { seat: "01", scores: [1, 1, 1, 1, 0] },
+      { seat: "02", scores: [1, 1, 1, 0, 0] },
+      { seat: "03", scores: [1, 1, 0, 1, 0] },
+      { seat: "04", scores: [1, 0, 0, 0, 0] },
+      { seat: "05", scores: [1, 1, 1, 1, 1] },
+      { seat: "06", scores: [0, 1, 0, 0, 0] }
     ]
   };
+
+  // 各生徒の合計点を計算し、点数順にソート（S曲線のベース）
+  mockSP.students.forEach(s => {
+    s.total = s.scores.reduce((a, b) => a + b, 0);
+  });
+  mockSP.students.sort((a, b) => b.total - a.total);
+
+  // 問題ごとの正答率を計算（P曲線のベース）
+  const studentCount = mockSP.students.length;
+  const problemStats = mockSP.problems.map((p, index) => {
+    const correctCount = mockSP.students.filter(s => s.scores[index] === 1).length;
+    return {
+      ...p,
+      correctCount,
+      correctRate: Math.round((correctCount / studentCount) * 100)
+    };
+  });
   
   return c.json({
     t_coefficient: mockT,
     interpretation: mockInterpretation,
-    sp_table: mockSP
+    sp_table: {
+      problems: problemStats,
+      students: mockSP.students
+    }
   })
 })
